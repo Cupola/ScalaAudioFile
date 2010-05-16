@@ -90,7 +90,16 @@
       <file leaf-file-name="SampleFormat.scala" pinned="false" current="true" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/src/main/scala/de/sciss/synth/io/SampleFormat.scala">
           <provider selected="true" editor-type-id="text-editor">
-            <state line="50" column="89" selection-start="1927" selection-end="1927" vertical-scroll-proportion="1.5368853">
+            <state line="62" column="21" selection-start="2395" selection-end="2395" vertical-scroll-proportion="0.60040987">
+              <folding />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="AudioFile.scala" pinned="false" current="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/src/main/scala/de/sciss/synth/io/AudioFile.scala">
+          <provider selected="true" editor-type-id="text-editor">
+            <state line="130" column="0" selection-start="5248" selection-end="5248" vertical-scroll-proportion="0.0">
               <folding />
             </state>
           </provider>
@@ -118,9 +127,9 @@
         <option value="$PROJECT_DIR$/src/main/scala/de/sciss/synth/io/AudioFileType.scala" />
         <option value="$PROJECT_DIR$/src/main/scala/de/sciss/synth/io/AudioFileSpec.scala" />
         <option value="$PROJECT_DIR$/src/main/scala/de/sciss/synth/io/AudioFileHeader.scala" />
-        <option value="$PROJECT_DIR$/src/main/scala/de/sciss/synth/io/AudioFile.scala" />
         <option value="$PROJECT_DIR$/src/main/scala/de/sciss/synth/io/BufferHandler.scala" />
         <option value="$PROJECT_DIR$/src/main/scala/de/sciss/synth/io/impl/AIFFHeader.scala" />
+        <option value="$PROJECT_DIR$/src/main/scala/de/sciss/synth/io/AudioFile.scala" />
         <option value="$PROJECT_DIR$/src/main/scala/de/sciss/synth/io/SampleFormat.scala" />
       </list>
     </option>
@@ -559,14 +568,14 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/src/main/scala/de/sciss/synth/io/AudioFile.scala">
       <provider selected="true" editor-type-id="text-editor">
-        <state line="87" column="39" selection-start="3906" selection-end="3906" vertical-scroll-proportion="0.6997886">
+        <state line="130" column="0" selection-start="5248" selection-end="5248" vertical-scroll-proportion="0.0">
           <folding />
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/src/main/scala/de/sciss/synth/io/SampleFormat.scala">
       <provider selected="true" editor-type-id="text-editor">
-        <state line="50" column="89" selection-start="1927" selection-end="1927" vertical-scroll-proportion="1.5368853">
+        <state line="62" column="21" selection-start="2395" selection-end="2395" vertical-scroll-proportion="0.60040987">
           <folding />
         </state>
       </provider>

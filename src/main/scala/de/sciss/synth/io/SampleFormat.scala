@@ -35,32 +35,32 @@ abstract class SampleFormat( val id: String, val bitsPerSample: Int ) {
 }
 
 object SampleFormat {
-   case object UInt8  extends SampleFormat( "uint8",   8 ) {
+   case object UInt8 extends SampleFormat( "uint8", 8 ) {
       def readerFactory = Some( BufferReader.Byte )
       def writerFactory = Some( BufferWriter.Byte )
       def bidiFactory   = Some( BufferBidi.Byte )
    }
-   case object Int8   extends SampleFormat( "int8",    8 ) {
+   case object Int8 extends SampleFormat( "int8", 8 ) {
       def readerFactory = Some( BufferReader.Byte )
       def writerFactory = Some( BufferWriter.Byte )
       def bidiFactory   = Some( BufferBidi.Byte )
    }
-   case object Int16  extends SampleFormat( "int16",  16 ) {
+   case object Int16 extends SampleFormat( "int16", 16 ) {
       def readerFactory = Some( BufferReader.Short )
       def writerFactory = Some( BufferWriter.Short )
       def bidiFactory   = Some( BufferBidi.Short )
    }
-   case object Int24  extends SampleFormat( "int24",  24 ) {
+   case object Int24 extends SampleFormat( "int24", 24 ) {
       def readerFactory = Some( BufferReader.ThreeBytes )
       def writerFactory = Some( BufferWriter.ThreeBytes )
       def bidiFactory   = Some( BufferBidi.ThreeBytes )
    }
-   case object Int32  extends SampleFormat( "int32",  32 ) {
+   case object Int32 extends SampleFormat( "int32", 32 ) {
       def readerFactory = Some( BufferReader.Int )
       def writerFactory = Some( BufferWriter.Int )
       def bidiFactory   = Some( BufferBidi.Int )
    }
-   case object Float  extends SampleFormat( "float",  32 ) {
+   case object Float extends SampleFormat( "float", 32 ) {
       def readerFactory = Some( BufferReader.Float )
       def writerFactory = Some( BufferWriter.Float )
       def bidiFactory   = Some( BufferBidi.Float )
