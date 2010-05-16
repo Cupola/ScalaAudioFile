@@ -1,24 +1,24 @@
 /*
- *  AudioFile.java
+ *  AudioFile.scala
  *  (ScalaAudioFile)
  *
  *  Copyright (c) 2004-2010 Hanns Holger Rutz. All rights reserved.
  *
- *	 This software is free software; you can redistribute it and/or
- *	 modify it under the terms of the GNU General Public License
- *	 as published by the Free Software Foundation; either
- *	 version 2, june 1991 of the License, or (at your option) any later version.
+ *  This software is free software; you can redistribute it and/or
+ *  modify it under the terms of the GNU General Public License
+ *  as published by the Free Software Foundation; either
+ *  version 2, june 1991 of the License, or (at your option) any later version.
  *
- *	 This software is distributed in the hope that it will be useful,
-*	 but WITHOUT ANY WARRANTY; without even the implied warranty of
- *	 MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
- *	 General Public License for more details.
- *  
- *	 You should have received a copy of the GNU General Public
- *	 License (gpl.txt) along with this software; if not, write to the Free Software
- *	 Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
- *  
- *  
+ *  This software is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ *  General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public
+ *  License (gpl.txt) along with this software; if not, write to the Free Software
+ *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ *
+ *
  *	 For further information, please contact Hanns Holger Rutz at
  *	 contact@sciss.de
  *
@@ -43,12 +43,15 @@
  *		10-Sep-08	added Wave64 support
  *    14-May-10   translated to Scala
  */
+
 package de.sciss.synth.io
 
-import java.io.{ File, IOException, RandomAccessFile }
+import impl.AIFFHeader
+import java.io.{ DataInputStream, File, FileInputStream, IOException, InputStream, RandomAccessFile }
 import java.nio.{ ByteBuffer, ByteOrder }
+import java.nio.channels.{ Channels, FileChannel, NonWritableChannelException, ReadableByteChannel }
 import java.nio.charset.{ Charset, CharsetDecoder, CharsetEncoder, CoderResult }
-import java.nio.channels.{NonWritableChannelException, FileChannel}
+import math._
 
 /**
  *	The <code>AudioFile</code> allows reading and writing
@@ -70,7 +73,7 @@ import java.nio.channels.{NonWritableChannelException, FileChannel}
  *  are not recognized.
  *  <p>
  *  To create a new <code>AudioFile</code> you call
- *  one of its static methods <code>openAsRead</code> or
+ *  one of its static methods <code>openRead</code> or
  *  <code>openAsWrite</code>. The format description
  *  is handled by an <code>AudioFileInfo</code> object.
  *	This object also contains information about what special
@@ -101,24 +104,6 @@ import java.nio.channels.{NonWritableChannelException, FileChannel}
  *				copy in the copyFrames method
  */
 object AudioFile {
-   abstract sealed class Type( val id: String, val ext: String )
-   case object AIFF     extends Type( "aiff",  "aif" )
-   case object NeXT     extends Type( "next",  "snd" )
-   case object Wave     extends Type( "wav",   "wav" )
-   case object IRCAM    extends Type( "ircam", "irc ")
-   case object Raw      extends Type( "raw",   "raw" )
-   case object Wave64   extends Type( "w64",   "w64" )
-
-   abstract sealed class SampleFormat( val id: String, val bitsPerSample: Int )
-   case object Int8     extends SampleFormat( "int8",    8 )
-   case object Int16    extends SampleFormat( "int16",  16 )
-   case object Int24    extends SampleFormat( "int24",  24 )
-   case object Int32    extends SampleFormat( "int32",  32 )
-   case object Float    extends SampleFormat( "float",  32 )
-   case object Double   extends SampleFormat( "double", 64 )
-//   case object MuLaw    extends SampleFormat( "mulaw" )
-//   case object ALaw     extends SampleFormat( "alaw" )
-
    type Frames = Array[ Array[ Float ]]
 
    private val NAME_LOOP		= "loop"
@@ -137,19 +122,50 @@ object AudioFile {
     *						      or has an unknown or unsupported format
     */
    @throws( classOf[ IOException ])
-   def openAsRead( f: File ) : AudioFile = {
-      val raf        = new RandomAccessFile( file, "r" )
-      val fileType   = retrieveFormat( raf )
-      af.afd.file    = f
-      af.afd.format  = af.retrieveFormat
-      af.afh			= af.createHeader
-      val info       = afh.readHeader
-      af.init
-      val af	      = new AudioFile( f, raf, MODE_READONLY )
-      af.seekFrame( 0 )
-      af
+   def openRead( f: File ) : AudioFile = {
+      val raf        = new RandomAccessFile( f, "r" )
+      val dis        = new DataInputStream( Channels.newInputStream( raf.getChannel() ))
+      val (afh, buf) = openRead( dis )
+      val spec       = afh.spec
+      val sf         = spec.sampleFormat
+      val br         = sf.readerFactory.map( _.apply( raf.getChannel(), buf, spec.numChannels ))
+         .getOrElse( noDecoder( sf ))
+      new ReadableFileImpl( dis, f, raf, afh, br )
    }
 
+   @throws( classOf[ IOException ])
+   def openRead( is: InputStream ) : AudioFile = {
+      val dis        = new DataInputStream( is )
+      val (afh, buf) = openRead( dis )
+      val spec       = afh.spec
+      val sf         = spec.sampleFormat
+      val br         = sf.readerFactory.map( _.apply( Channels.newChannel( dis ), buf, spec.numChannels ))
+         .getOrElse( noDecoder( sf ))
+      new ReadableStreamImpl( dis, afh, br )
+   }
+
+   @throws( classOf[ IOException ])
+   private def openRead( dis: DataInputStream ) : (AudioFileHeader, ByteBuffer) = {
+      val fileType   = retrieveType( dis ).getOrElse( throw new IOException( "Unrecognized audio file format" ))
+      val factory    = fileType.factory.getOrElse( noDecoder( fileType ))
+      val afhr       = factory.createHeaderReader.getOrElse( noDecoder( fileType ))
+      val afh        = afhr.read( dis )
+      val spec       = afh.spec
+      val sf         = spec.sampleFormat
+      val buf        = createBuffer( afh )
+      (afh, buf)
+   }
+
+   private def createBuffer( afh: AudioFileHeader ) : ByteBuffer = {
+      val spec       = afh.spec
+      val frameSize  = (spec.sampleFormat.bitsPerSample >> 3) * spec.numChannels
+      val bufFrames  = max( 1, 65536 / max( 1, frameSize ))
+      val bufSize    = bufFrames * frameSize
+		val byteBuf    = ByteBuffer.allocateDirect( bufSize )
+		byteBuf.order( afh.byteOrder )
+   }
+   
+   private def noDecoder( msg: AnyRef ) = throw new IOException( "No decoder for " + msg )
 
    /**
     *  Opens an audiofile for reading/writing. The pathname
@@ -169,23 +185,26 @@ object AudioFile {
     *  @throws IOException if the file could not be created or the
     *						      format is unsupported
     */
+/*
    @throws( classOf[ IOException ])
-   def openAsWrite( afd: AudioFileInfo ) : AudioFile = {
-      if( afd.file.exists ) afd.file.delete
-      val raf           = new RandomAccessFile( file, "rw" )
-      val af	         = new AudioFile( afd.file, raf, MODE_READWRITE )
-      af.afd				= afd
-      afd.len			= 0L
-      af.afh				= af.createHeader
-      af.afh.writeHeader( af.afd )
-      af.init
-      af.seekFrame( 0L )
-      af.updateStep		= afd.rate.toLong * 20
-      af.updateLen		= af.updateStep
-      af.updateTime		= System.currentTimeMillis() + 10000
+   def openAsWrite( f: File, spec: AudioFileSpec ) : AudioFile = {
+      if( f.exists ) f.delete
+      val raf           = new RandomAccessFile( f, "rw" )
+      val bh : BufferHandler = null
+      val afhw: AudioFileHeaderWriter = null
+      val af	         = new WritableImpl( f, raf, bh, afhw )
+//      af.afd				= afd
+//      afd.len			= 0L
+//      af.afh				= af.createHeader
+//      af.afh.writeHeader( af.afd )
+//      af.init
+//      af.seekFrame( 0L )
+//      af.updateStep		= afd.rate.toLong * 20
+//      af.updateLen		= af.updateStep
+//      af.updateTime		= System.currentTimeMillis() + 10000
       af
    }
-
+*/
    /**
     *  Determines the type of audio file.
     *
@@ -197,121 +216,76 @@ object AudioFile {
     *  @throws IOException if the file could not be read
     */
    @throws( classOf[ IOException ])
-   def retrieveType( f: File ) : Type = {
-      val raf = new RandomAccessFile( f, "r" )
+   def retrieveType( f: File ) : Option[ AudioFileType ] = {
+      val dis = new DataInputStream( new FileInputStream( f ))
       try {
-         retrieveType( raf )
+         retrieveType( dis )
       } finally {
-         raf.close()
+         dis.close()
       }
    }
 
    @throws( classOf[ IOException ])
-   private def retrieveType( raf: RandomAccessFile ) : Option[ Type ] = {
-      val len		= raf.len()
-      val oldPos	= raf.getFilePointer()
-      if( len < 4 ) return None
+   def retrieveType( dis: DataInputStream ) : Option[ AudioFileType ] =
+      AudioFileType.known.find( _.factory.map( _.identify( dis )).getOrElse( false ))
+//            case WAVEHeader.RIFF_MAGIC => {					         // -------- probably WAVE --------
+//               if( len >= 12 ) {
+//                  raf.readInt()
+//                  val magic = raf.readInt()
+//                  if( magic == WAVEHeader.WAVE_MAGIC ) Some( Wave )
+//                  else None
+//               } else None
+//            }
+//            case Wave64Header.RIFF_MAGIC1a => {				         // -------- probably Wave64 --------
+//               if( (len >= 40) &&
+//                   (raf.readInt() == Wave64Header.RIFF_MAGIC1b) &&
+//                   (raf.readLong() == Wave64Header.RIFF_MAGIC2) ) {
+//
+//                  raf.readLong() // len
+//
+//                  if( (raf.readLong() == Wave64Header.WAVE_MAGIC1) &&
+//                      (raf.readLong() == Wave64Header.WAVE_MAGIC2) ) Some( Wave64 )
+//                  else None
+//               } else None
+//            }
+//            case SNDHeader.SND_MAGIC => Some( NeXT )              // -------- snd --------
+//            case IRCAMHeader.IRCAM_VAXBE_MAGIC => Some( IRCAM )	// -------- IRCAM --------
+//            case IRCAMHeader.IRCAM_SUNBE_MAGIC => Some( IRCAM )
+//            case IRCAMHeader.IRCAM_MIPSBE_MAGIC => Some( IRCAM )
 
-      try {
-         raf.seek( 0L )
-         raf.readInt() match {
-            case AIFFHeader.FORM_MAGIC => {					         // -------- probably AIFF --------
-               if( len >= 12 ) {
-                  raf.readInt()
-                  val magic = raf.readInt()
-                  if( magic == AIFFHeader.AIFC_MAGIC || magic == AIFFHeader.AIFF_MAGIC ) Some( AIFF )
-                  else None
-               } else None
-            }
-            case WAVEHeader.RIFF_MAGIC => {					         // -------- probably WAVE --------
-               if( len >= 12 ) {
-                  raf.readInt()
-                  val magic = raf.readInt()
-                  if( magic == WAVEHeader.WAVE_MAGIC ) Some( Wave )
-                  else None
-               } else None
-            }
-            case Wave64Header.RIFF_MAGIC1a => {				         // -------- probably Wave64 --------
-               if( (len >= 40) &&
-                   (raf.readInt() == Wave64Header.RIFF_MAGIC1b) &&
-                   (raf.readLong() == Wave64Header.RIFF_MAGIC2) ) {
+//   @throws( classOf[ IOException ])
+//	private def createHeader( fileType: Type ) : Header = {
+//		afd.format match {
+//         case AIFF   => new AIFFHeader
+//         case NeXT   => new SNDHeader
+//         case IRCAM  => new IRCAMHeader
+//         case Wave   => new WAVEHeader
+//         case Raw    => new RawHeader
+//         case Wave64 => new Wave64Header
+//         case _      => throw new IOException( getResourceString( "errAudioFileType" ))
+//		}
+//	}
 
-                  raf.readLong() // len
-
-                  if( (raf.readLong() == Wave64Header.WAVE_MAGIC1) &&
-                      (raf.readLong() == Wave64Header.WAVE_MAGIC2) ) Some( Wave64 )
-                  else None
-               } else None
-            }
-            case SNDHeader.SND_MAGIC => Some( NeXT )              // -------- snd --------
-            case IRCAMHeader.IRCAM_VAXBE_MAGIC => Some( IRCAM )	// -------- IRCAM --------
-            case IRCAMHeader.IRCAM_SUNBE_MAGIC => Some( IRCAM )
-            case IRCAMHeader.IRCAM_MIPSBE_MAGIC => Some( IRCAM )
-
-            case _ => None
-         }
-      } finally {
-         raf.seek( oldPos )
-      }
-   }
-
-   @throws( classOf[ IOException ])
-	private def createHeader( fileType: Type ) : Header = {
-		afd.format match {
-         case AIFF   => new AIFFHeader
-         case NeXT   => new SNDHeader
-         case IRCAM  => new IRCAMHeader
-         case Wave   => new WAVEHeader
-         case Raw    => new RawHeader
-         case Wave64 => new Wave64Header
-         case _      => throw new IOException( getResourceString( "errAudioFileType" ))
-		}
-	}
-
-   private class Impl( val file: File, val info: AudioFileInfo,  raf: RandomAccessFile ) extends AudioFile {
-      protected val fch = raf.getChannel()
+   private trait Basic extends AudioFile {
       var framePosition: Long = 0L
 
-      protected var afd: AudioFileInfo = null
-      private var afh: AudioFileHeader = null
+      protected def afh: AudioFileHeader
+      protected def bh: BufferHandler 
 
-      protected var byteBuf : ByteBuffer = null
-      private var byteBufCapacity : Int = 0
-      protected var bytesPerFrame : Int = 0
-      protected var frameBufCapacity : Int = 0
-      private var bh : BufferHandler = null
-      protected var channels : Int = 0
-      private var framePosition : Long = 0L
-
-      private var updateTime : Long = 0L
-      private var updateLen : Long = 0L
-      private var updateStep : Long = 0L
+      def numFrames : Long       = afh.spec.numFrames
+      def spec : AudioFileSpec   = afh.spec
 
       @throws( classOf[ IOException ])
-      def seekFrame( frame : Long ) : AudioFile = {
-         val physical = afh.getSampleDataOffset() + frame * bytesPerFrame
-         raf.seek( physical )
-         framePosition = frame
-         this
-      }
-
-      @throws( classOf[ IOException ])
-      def readFrames( data: Frames, off: Int, len: Int ) : AudioFile = {
-         bh.readFrames( data, off, len )
-         framePosition += len
-         this
-      }
-
-      @throws( classOf[ IOException ])
-      def copyFrames( target: AudioFile, numFrames: Long ) : AudioFile = {
+      def copyFrames( target: AudioFile, len: Long ) : AudioFile = {
          val tempBufSize	= min( len, 8192 ).toInt
-         val tempBuf		   = Array.ofDim( channels, tempBufSize )
+         val tempBuf		   = Array.ofDim[ Float ]( spec.numChannels, tempBufSize )
+         var remaining     = len
 
-         while( len > 0 ) {
-            val chunkLen = min( len, tempBufSize ).toInt
+         while( remaining > 0 ) {
+            val chunkLen = min( remaining, tempBufSize ).toInt
             readFrames( tempBuf, 0, chunkLen )
             target.writeFrames( tempBuf, 0, chunkLen )
-            len -= chunkLen
+            remaining -= chunkLen
          }
          this
       }
@@ -320,58 +294,120 @@ object AudioFile {
          try { close } catch { case e: IOException => }
          this
       }
+
+      protected def opNotSupported = throw new IOException( "Operation not supported" )
    }
 
-   private class ReadbleImpl( _file: File, _info: AudioFileInfo, _raf: RandomAccessFile, val numFrames: Long )
-   extends Impl( _file, _info, _raf ) {
-      def isWritable = false
+   private trait Readable extends Basic {
+      protected def bh: BufferReader
+      protected def dis: DataInputStream
 
       @throws( classOf[ IOException ])
-      def flush : AudioFile = readOnly
+      def readFrames( data: Frames, off: Int, len: Int ) : AudioFile = {
+         bh.readFrames( data, off, len )
+         framePosition += len
+         this
+      }
+   }
+
+   private trait ReadOnly extends Readable {
+      def isWritable       = false
 
       @throws( classOf[ IOException ])
-      def writeFrames( data: Frames, off: Int, len : Int ) : AudioFile = readOnly
+      def flush : AudioFile = opNotSupported
 
       @throws( classOf[ IOException ])
-      def numFrames_=( frames : Long ) : AudioFile = readOnly
+      def writeFrames( data: Frames, off: Int, len : Int ) : AudioFile = opNotSupported
 
       @throws( classOf[ IOException ])
-      def truncate : AudioFile = readOnly
+      def numFrames_=( frames : Long ) : AudioFile = opNotSupported
+
+      @throws( classOf[ IOException ])
+      def truncate : AudioFile = opNotSupported
 
       @throws( classOf[ IOException ])
       def close : AudioFile = {
-         raf.close()
+         dis.close()
          this
       }
-
-      private def readOnly = throw new IOException( new NonWritableChannelException )
    }
 
-   private class WritableImpl( _file: File, _info: AudioFileInfo, _raf: RandomAccessFile )
-   extends Impl( _file, _info, _raf ) {
+   private trait StreamImpl extends Basic {
+      def file: Option[ File ] = None
+
+      @throws( classOf[ IOException ])
+      def seekFrame( frame : Long ) : AudioFile = opNotSupported
+   }
+
+   private trait FileImpl extends Basic {
+      protected def f: File
+      protected def raf: RandomAccessFile
+      
+      def file: Option[ File ] = Some( f )
+
+      private val sampleDataOffset = raf.getFilePointer()
+      
+      @throws( classOf[ IOException ])
+      def seekFrame( frame : Long ) : AudioFile = {
+         val physical = sampleDataOffset + frame * bh.frameSize
+         raf.seek( physical )
+         framePosition = frame
+         this
+      }
+   }
+
+   private class ReadableStreamImpl( protected val dis: DataInputStream, protected val afh: AudioFileHeader,
+                                     protected val bh: BufferReader )
+   extends Basic with ReadOnly with StreamImpl {
+   }
+
+   private class ReadableFileImpl( protected val dis: DataInputStream, protected val f: File,
+                                   protected val raf: RandomAccessFile, protected val afh: AudioFileHeader,
+                                   protected val bh: BufferReader )
+   extends Basic with ReadOnly with FileImpl {
+   }
+
+/*
+   private class WritableImpl( _file: Option[ File ], _raf: RandomAccessFile, bh: BufferHandler,
+                               afhw: AudioFileHeaderWriter )
+   extends Basic {
       private var numFramesVar  = 0L
+      private var updateTime : Long = _
+      private var updatePos : Long = _
+      private val updateStep  = spec.sampleRate.toLong * 20
+
+      // ---- constructor ----
+      {
+         resetUpdate
+      }
 
       def numFrames: Long = numFramesVar
 
+      private def resetUpdate {
+         updateTime	= System.currentTimeMillis() + 10000
+         updatePos   = framePosition + updateStep
+      }
+
       @throws( classOf[ IOException ])
       def numFrames_=( frames : Long ) : AudioFile = {
-         val physical = afh.getSampleDataOffset() + frames * bytesPerFrame
+         raf.map( r => {
+            val physical = afh.sampleDataOffset + frames * bh.frameSize
 
-         raf.setLength( physical )
-         if( framePosition > frames ) framePosition = frames
-         numFramesVar = frames
-         this
+            raf.setLength( physical )
+            if( framePosition > frames ) framePosition = frames
+            numFramesVar = frames
+            resetUpdate
+            this
+         }) getOrElse opNotSupported
       }
 
       def isWritable = true
 
       @throws( classOf[ IOException ])
       def flush : AudioFile = {
-         updateTime	= System.currentTimeMillis() + 10000
-         afd.len	= framePosition
-         afh.updateHeader( afd )
-         updateLen	= framePosition + updateStep
+         afhw.update( numFrames )
          fch.force( true )
+         resetUpdate
          this
       }
 
@@ -380,11 +416,10 @@ object AudioFile {
          bh.writeFrames( data, off, len )
          framePosition += len
 
-         if( framePosition > afd.len ) {
-            if( (framePosition > updateLen) || (System.currentTimeMillis() > updateTime) ) {
+         if( framePosition > numFrames ) {
+            numFrames = framePosition
+            if( (framePosition > updatePos) || (System.currentTimeMillis() > updateTime) ) {
                flush
-            } else {
-               afd.len = framePosition
             }
          }
          this
@@ -393,23 +428,23 @@ object AudioFile {
       @throws( classOf[ IOException ])
       def truncate : AudioFile = {
          fch.truncate( fch.position() )
-         if( framePosition != afd.len ) {
-            afd.len	= framePosition
-            updateTime	= System.currentTimeMillis() + 10000
-            afh.updateHeader( afd )
-            updateLen	= framePosition + updateStep
+         if( framePosition != numFrames ) {
+            numFrames	= framePosition
+            afhw.update( numFrames )
+            resetUpdate
          }
          this
       }
 
       @throws( classOf[ IOException ])
       def close : AudioFile = {
+         afhw.update( numFrames )
          fch.force( true )
-         afh.updateHeader( afd )
          raf.close()
          this
       }
    }
+   */
 }
 
 trait AudioFile {
@@ -417,7 +452,7 @@ trait AudioFile {
 
 //-------- public methods --------
 
-   def file: File
+   def file: Option[ File ]
    def isWritable
 
 	/**
@@ -436,46 +471,46 @@ trait AudioFile {
 	 *				is modified, e.g. the <code>len</code> field
 	 *				for a writable file.
 	 */
-	def info: AudioFileInfo
+	def spec: AudioFileSpec
 	
-   @throws( classOf[ IOException ])
-	private def init {
-		channels		=afd.channels;
-		bytesPerFrame	= (afd.bitsPerSample >> 3) * channels;
-		frameBufCapacity= Math.max( 1, 65536 / Math.max( 1, bytesPerFrame ));
-		byteBufCapacity = frameBufCapacity * bytesPerFrame;
-		byteBuf			= ByteBuffer.allocateDirect( byteBufCapacity );
-		byteBuf.order( afh.getByteOrder() );
-		bh				= null;
-
-		afd.sampleFormat match {
-		case AudioFileInfo.FORMAT_INT => afd.bitsPerSample match {
-			case 8 => 			// 8 bit int
-				if( afh.isUnsignedPCM() ) {
-					bh  = new UByteBufferHandler();
-			   } else {
-					bh  = new ByteBufferHandler();
-            }
-	      case 16 =>		// 16 bit int
-            bh  = new ShortBufferHandler();
-			case 24 =>		// 24 bit int
-				if(afh.getByteOrder() == ByteOrder.BIG_ENDIAN ) {
-					bh  = new ThreeByteBufferHandler();
-				} else {
-					bh  = new ThreeLittleByteBufferHandler();
-			}
-			case 32 =>		// 32 bit int
-				bh  = new IntBufferHandler();
-	   }
-		case AudioFileInfo.FORMAT_FLOAT => afd.bitsPerSample match {
-			case 32 =>		// 32bit float
-				bh  = new FloatBufferHandler();
-			case 64 =>		// 64 bit float
-				bh  = new DoubleBufferHandler();
-			}
-		}
-		if( bh == null ) throw new IOException( getResourceString( "errAudioFileEncoding" ));
-	}
+//   @throws( classOf[ IOException ])
+//	private def init {
+//		channels		   = afd.channels;
+//		bytesPerFrame	= (afd.bitsPerSample >> 3) * channels
+//		frameBufCapacity= Math.max( 1, 65536 / Math.max( 1, bytesPerFrame ))
+//		byteBufCapacity = frameBufCapacity * bytesPerFrame
+//		byteBuf			= ByteBuffer.allocateDirect( byteBufCapacity )
+//		byteBuf.order( afh.byteOrder )
+//		bh				= null;
+//
+//		afd.sampleFormat match {
+//		case AudioFileInfo.FORMAT_INT => afd.bitsPerSample match {
+//			case 8 => 			// 8 bit int
+//				if( afh.isUnsignedPCM() ) {
+//					bh  = new UByteBufferHandler();
+//			   } else {
+//					bh  = new ByteBufferHandler();
+//            }
+//	      case 16 =>		// 16 bit int
+//            bh  = new ShortBufferHandler();
+//			case 24 =>		// 24 bit int
+//				if(afh.getByteOrder() == ByteOrder.BIG_ENDIAN ) {
+//					bh  = new ThreeByteBufferHandler();
+//				} else {
+//					bh  = new ThreeLittleByteBufferHandler();
+//			}
+//			case 32 =>		// 32 bit int
+//				bh  = new IntBufferHandler();
+//	   }
+//		case AudioFileInfo.FORMAT_FLOAT => afd.bitsPerSample match {
+//			case 32 =>		// 32bit float
+//				bh  = new FloatBufferHandler();
+//			case 64 =>		// 64 bit float
+//				bh  = new DoubleBufferHandler();
+//			}
+//		}
+//		if( bh == null ) throw new IOException( getResourceString( "errAudioFileEncoding" ));
+//	}
 
 	/**
 	 *  Moves thefile pointer to a specific
@@ -571,15 +606,17 @@ trait AudioFile {
 	def numFrames_=( frames : Long ) : AudioFile
 
 	/**
-	 *	Returns the number of channels
-	 *	in the file.
+	 *	Convenience method: Returns the number of channels
+	 *	in the file. Same as <code>spec.numChannels</code>.
 	 *
 	 *	@return	the number of channels
 	 */
-   def numChannels : Int = info.numChannels
+   def numChannels : Int = spec.numChannels
+
+//   def sampleRate: Double = spec.sampleRate
 
 	/**
-*	Truncates the file to the size represented
+    *	Truncates the file to the size represented
 	 *	by the current file position. The file
 	 *	must have been opened in write mode.
 	 *	Truncation occurs only if frames exist
@@ -640,8 +677,8 @@ trait AudioFile {
 	 *
 	 *	@throws	IOException	if a read or parsing error occurs
 	 */
-   @throws( classOf[ IOException ])
-	def readMarkers { afh.readMarkers }
+//   @throws( classOf[ IOException ])
+//	def readMarkers { afh.readMarkers }
 
 	/**
 	 *  Reads application specific code into the audio file description
@@ -655,500 +692,12 @@ trait AudioFile {
 	 *
 	 *	@throws	IOException	if a read or parsing error occurs
 	 */
-   @throws( classOf[ IOException ])
-	def readAppCode { afh.readAppCode }
+//   @throws( classOf[ IOException ])
+//	def readAppCode { afh.readAppCode }
 
 // -------- AudioFileHeader implementations --------
 
 /*
-	private class AIFFHeader
-	extends AudioFileHeader
-	{
-		private static final int FORM_MAGIC		= 0x464F524D;	// 'FORM'
-		private static final int AIFF_MAGIC		= 0x41494646;	// 'AIFF'   (off 8)
-		private static final int AIFC_MAGIC		= 0x41494643;	// 'AIFC'   (off 8)
-
-		// chunk identifiers
-		private static final int COMM_MAGIC		= 0x434F4D4D;	// 'COMM'
-		private staticfinalint INST_MAGIC		= 0x494E5354;	// 'INST'
-		private static final int MARK_MAGIC		= 0x4D41524B;	// 'MARK'
-		private static final int SSND_MAGIC		= 0x53534E44;	// 'SSND
-		private static final int FVER_MAGIC		= 0x46564552;	// 'FVER
-		private static final int APPL_MAGIC		= 0x4150504C;	// 'APPL'
-		private static final int COMT_MAGIC		= 0x434F4D54;	// 'COMT'
-		private static final int ANNO_MAGIC		= 0x414E4E4F;	// 'ANNO'
-		
-	// aifc compression identifiers
-		private static final int NONE_MAGIC		= 0x4E4F4E45;	// 'NONE' (AIFC-compression)
-		private static final int fl32_MAGIC		= 0x666C3332;	// 'fl32' (AIFC-compression)
-		private static final int FL32_MAGIC		= 0x464C3332;	// SoundHack variant
-		private static final int fl64_MAGIC		= 0x666C3634;
-		private static final int FL64_MAGIC		= 0x464C3634;// SoundHack variant
-		private staticfinal int in16_MAGIC		= 0x696E3136;	// we "love" SoundHack for its special interpretations
-		private static final int in24_MAGIC		= 0x696E3234;
-		private static final int in32_MAGIC		= 0x696E3332;
-		private static final int in16LE_MAGIC	=0x736F7774;	// 'sowt' (16-bit PCM little endian)
-
-		private boolean isAIFC					= true;			// default for writing files
-		privatestatic final int AIFCVersion1	= 0xA2805140;	// FVER chunk
-//		private static final String NONE_HUMAN	= "uncompressed";
-		private static final String fl32_HUMAN	="32-bit float";
-		private static final String fl64_HUMAN	= "64-bit float";
-
-		private long 		sampleDataOffset;
-		
-		private long 		formLengthOffset	= 4L;
-		private long 		commSmpNumOffset;
-		private long 		ssndLengthOffset;
-		private long 		lastUpdateLength	= 0L;
-		// WARNING: this will be queried in openAsWrite, therefore
-		// a default isrequired!!
-		private ByteOrder	byteOrder			= ByteOrder.BIG_ENDIAN;
-		
-		private int			appCodeLen;
-		private long		appCodeOff			= 0L;
-		private long		markersOffset		= 0L;
-		private boolean		loop				= false;
-		private int			loopStart	= 0;
-		private int			loopEnd				= 0;
-
-		protected AIFFHeader() { /* empty */ }
-		
-		protected void readHeader( AudioFileInfo descr )
-		throws IOException
-		{
-			long			l1, l2, l3, len;
-			int				i, i1, i2, chunkLen, essentials, magic;
-			byte[]			strBuf;
-			boolean			comment			= false;
-
-			raf.readInt();		// FORM
-raf.readInt();
-// trust the file len morethan 32 bit form field which breaks for > 2 GB (> 1 GB if using signed ints)
-len = raf.len() - 8;
-//			len= (raf.readInt() + 1) & 0xFFFFFFFE;		// Laenge ohne FORM-Header (Dateilaenge minus 8)
-			isAIFC  = raf.readInt() == AIFC_MAGIC;
-			len	   -= 4;
-			chunkLen= 0;
-			
-			for( essentials = 2; (len > 0) && (essentials > 0); ) {
-				if( chunkLen != 0 ) raf.seek( raf.getFilePointer() + chunkLen );	// skip to next chunk
-			
-				magic		= raf.readInt();
-				chunkLen	= (raf.readInt() + 1) & 0xFFFFFFFE;
-				len		   -= chunkLen + 8;
-
-				switch( magic ) {
-				case COMM_MAGIC:
-					essentials--;
-					descr.channels		= raf.readShort();	// # of channels
-					commSmpNumOffset	= raf.getFilePointer();
-					descr.len			= raf.readInt();	// # of samples
-					descr.bitsPerSample	= raf.readShort();	// # of bits per sample
-					descr.sampleFormat	= AudioFileInfo.FORMAT_INT;   // default, AIFC willbe dealt with later
-//					byteOrder			= ByteOrder.BIG_ENDIAN;   // default, AIFC will be dealt with later
-
-					// suckers never die. perhaps the most stupid data format to store a float:
-					l1 					= raf.readLong();
-					l2	 				= raf.readUnsignedShort();
-					l3	 				= l1 & 0x0000FFFFFFFFFFFFL;
-					i1					= ((int) (l1 >> 48) & 0x7FFF) - 0x3FFE;
-//					afd.rate			= (float) ((((double) l3 * Math.pow( 2.0, i1 - 48 )) +
-//												    ((double) l2 * Math.pow( 2.0, i1 - 64 ))) * (l1 < 0 ? -1: 1));
-					descr.rate			= ((l3 * Math.pow( 2.0, i1 - 48 )) +
-										   (l2 * Math.pow( 2.0, i1 - 64 ))) * (l1< 0 ? -1 : 1);
-
-					chunkLen -= 18;
-	if( isAIFC ) {
-						switch( raf.readInt() ) {
-						case NONE_MAGIC:
-							break;
-						case in16_MAGIC:
-							descr.bitsPerSample	= 16;
-							break;
-						case in24_MAGIC:
-							descr.bitsPerSample	= 24;
-							break;
-						case in32_MAGIC:
-			descr.bitsPerSample	= 32;
-							break;
-						case fl32_MAGIC:
-						case FL32_MAGIC:
-							descr.bitsPerSample	= 32;
-			descr.sampleFormat	= AudioFileInfo.FORMAT_FLOAT;
-							break;
-						casefl64_MAGIC:
-						case FL64_MAGIC:
-				descr.bitsPerSample	=64;
-							descr.sampleFormat	= AudioFileInfo.FORMAT_FLOAT;
-							break;
-						case in16LE_MAGIC:
-			descr.bitsPerSample	= 16;
-							byteOrder			= ByteOrder.LITTLE_ENDIAN;
-							break;
-						default:
-throw new IOException( getResourceString( "errAudioFileEncoding" ));
-						}
-						chunkLen -= 4;
-					}
-					break;
-
-		case INST_MAGIC:
-					raf.readInt();	// char: MIDI Note, Detune, LowNote, HighNote
-//					i1				= readInt();	// char: MIDI Note, Detune, LowNote, HighNote
-//					b1					= (byte) ((i1 & 0x00FF0000) >> 16);	// Detune in -50...50 Cent
-//											// MIDI-Note to Hz (69= A4 = 440 Hz)
-//					stream.base			= (float) (440.0 * Math.pow( 2, ((float) (((i1 & 0x7F000000) >> 24) -
-//					69) + (float) b1 / 100.0f) /12.0f ));
-		i1					= raf.readInt();		// char velocityLo, char velocityHi, short gain [dB]
-					descr.setProperty( AudioFileInfo.KEY_GAIN,
-									 new Float( Math.exp( (double) (i1 & 0xFFFF) / 20 * Math.log( 10 ))));
-					i1	 				= raf.readShort();// Sustain-Loop: 0 = no loop, 1 = fwd, 2 = back
-loop				= i1 != 0;
-					i1					= raf.readInt();		// Short Lp-Start-MarkerID, Short End-ID
-					loopStart			= (i1 >> 16) & 0xFFFF;
-					loopEnd				=i1 & 0xFFFF;
-					chunkLen -= 14;
-					break;
-
-				case MARK_MAGIC:
-					markersOffset = raf.getFilePointer();		// read them out later
-					break;
-
-				case SSND_MAGIC:
-					essentials--;
-					i1 = raf.readInt();		// sample data off
-					raf.readInt();
-					sampleDataOffset = raf.getFilePointer() + i1;
-					chunkLen -= 8;
-					break;
-				
-				case APPL_MAGIC:
-					strBuf		= new byte[ 4 ];
-					raf.readFully( strBuf );		//App code
-					chunkLen   -= 4;
-				descr.appCode	= new String( strBuf );
-					appCodeOff	= raf.getFilePointer();
-					appCodeLen	= chunkLen;
-					break;
-			
-				caseCOMT_MAGIC:
-					i1= raf.readShort();	// number of comments
-					chunkLen -= 2;
-commentLp:		for( i = 0; !comment && (i < i1); i++ ) {
-						raf.readInt();				// time stamp (ignore)
-					i2	= raf.readInt();		// markerID << 16 | count
-						chunkLen -= 8;
-						if( (i2 != 0) && ((i2 >> 16) == 0) ) {		// ok, not empty and not linked to a marker
-							strBuf  = new byte[ i2 ];
-							// NOTE: although it states "Pascal String" in AIFF.h
-			// all text documents describing the chunk assume a plain string
-							//; PString wouldn't make sense anyway because we have
-							// the dedicated count field. Logic Pro 6 writes a PString
-			// but leaves count at zero, so this won't get read...
-							raf.readFully( strBuf );
-							descr.setProperty( AudioFileInfo.KEY_COMMENT, new String( strBuf ));
-						if( (i2 & 1) == 1 ) {
-	i2++;
-								raf.readByte();
-							}
-							chunkLen   -= i2;
-				comment		= true;
-							break commentLp;
-							
-						} else {
-i2		  = (i2 + 1) & 0xFFFE;
-							chunkLen -= i2;
-							raf.seek( raf.getFilePointer() + i2 );
-						}
-					}
-					break;
-					
-				case ANNO_MAGIC:
-					if( !comment ) {
-						strBuf		= new byte[chunkLen ];
-						raf.readFully(strBuf );
-						descr.setProperty( AudioFileInfo.KEY_COMMENT, new String( strBuf ));
-						chunkLen	= 0;
-					comment		= true;
-					}
-					break;
-
-				default:
-					break;
-				}// switch( magic )
-			} // for( essentials = 2; (len > 0) && (essentials > 0); )
-			if( essentials > 0 ) throw new IOException( getResourceString( "errAudioFileIncomplete" ));
-		}
-		
-		protected void writeHeader( AudioFileInfo descr )
-		throws IOException
-		{
-			int				i1, i2;
-			String		str;
-			byte[]			strBuf;
-			Object			o;
-			Region			region;
-			List			markers;
-			Marker			marker;
-			double			d1, d2;
-			long			pos, pos2;
-			boolean			lp;
-
-			isAIFC= descr.sampleFormat == AudioFileInfo.FORMAT_FLOAT;	// floating point requires AIFC compression extension
-			raf.writeInt( FORM_MAGIC );
-			raf.writeInt( 0 );				// Laenge ohne FORM-Header (Dateilaenge minus8); unknown now
-			raf.writeInt( isAIFC ? AIFC_MAGIC : AIFF_MAGIC );
-
-			// FVER Chunk
-			if( isAIFC ) {
-				raf.writeInt( FVER_MAGIC );
-raf.writeInt( 4 );
-				raf.writeInt( AIFCVersion1 );
-			}
-			
-			// COMM Chunk
-			raf.writeInt( COMM_MAGIC );
-			pos =raf.getFilePointer();
-			raf.writeInt( 0 );				// not known yet
-			raf.writeShort( descr.channels );
-			commSmpNumOffset = raf.getFilePointer();
-			raf.writeInt( 0 );			// updated later
-			raf.writeShort( isAIFC ? 16 : descr.bitsPerSample );	// a quite strange convention ...
-
-			// suckers never die.
-			i2		= (descr.rate <0.0) ? 128 : 0;
-d2		= Math.abs( descr.rate  );
-			i1		= (int) (Math.log( d2 ) / Math.log( 2 ) + 16383.0) & 0xFFFF;
-	d1		= d2 * (1 << (0x401E-i1));	// Math.pow( 2.0,0x401E - i1 );
-			raf.writeShort( (((i2 | (i1 >> 8)) & 0xFF) << 8) | (i1 & 0xFF) );
-			raf.writeInt( (int) ((long) d1 & 0xFFFFFFFF) );
-			raf.writeInt( (int) ((long) ((d1 % 1.0) * 4294967296.0) & 0xFFFFFFFF) );
-
-			if( isAIFC ) {
-				if( descr.bitsPerSample == 32 ) {
-					str	= fl32_HUMAN;
-					i1	= fl32_MAGIC;
-				} else {
-					str = fl64_HUMAN;
-		i1	= fl64_MAGIC;
-				}
-				raf.writeInt( i1 );
-				raf.writeByte( str.len() );
-				raf.writeBytes( str );
-				if( (str.len() & 1) == 0 ) {
-					raf.writeByte( 0x00);
-//				} else {
-//					raf.writeShort( 0x0000 );
-				}
-			}
-			// ...chunk len update...
-			pos2 = raf.getFilePointer();
-			raf.seek( pos );
-			raf.writeInt( (int) (pos2 - pos - 4) );
-			raf.seek( pos2 );
-
-			// INST Chunk
-			raf.writeInt( INST_MAGIC );
-			raf.writeInt( 20 );
-
-//			f1	= (float) (12 * Math.log( (double) stream.base / 440.0 ) / Constants.ln2);
-//			i1	= (int) (f1 + 0.5f);
-//			b1	= (byte) ((f1 - (float) i1) * 100.0f);
-//			writeInt( (((i1 + 69) & 0xFF) << 24) | ((int) b1 << 16) | 0x007F );	// char: MIDI Note, Detune, LowNote, HighNote
-			raf.writeInt( (69 << 24) | (0 << 16) | 0x007F );	// char: MIDI Note, Detune, LowNote, HighNote
-			
-			// XXX the gain information could be updated in updateHeader()
-			o = descr.getProperty( AudioFileInfo.KEY_GAIN );
-			if( o != null ) {
-				i1	= (int) (20 * Math.log( ((Float) o).floatValue() ) / Math.log( 10) + 0.5);
-			} else {
-				i1= 0;
-			}
-			raf.writeInt( (0x007F << 16) | (i1 & 0xFFFF) );		// char velLo, char velHi, short gain [dB]
-
-			region  = (Region) descr.getProperty( AudioFileInfo.KEY_LOOP );
-			lp	= region != null;
-			raf.writeShort( lp ? 1 : 0 );					// No loop vs. loop forward
-raf.writeInt( lp ? 0x00010002 : 0 );			// Sustain-Loop Markers
-			raf.writeShort( 0 );							// No release loop
-			raf.writeInt( 0 );
-
-			markers= (List) descr.getProperty( AudioFileInfo.KEY_MARKERS );
-			if( markers == null ) markers = Collections.EMPTY_LIST;
-			// MARK Chunk
-			if( lp || !markers.isEmpty() ) {
-				raf.writeInt( MARK_MAGIC );
-				pos= raf.getFilePointer();
-				raf.writeInt( 0 );				// not known yet
-	i1	= markers.size() + (lp? 2 : 0);
-				raf.writeShort( i1 );
-				i2	= 1;					// ascending marker ID
-				if( lp ) {
-					raf.writeShort( i2++ );						// loopstart ID
-					raf.writeInt( (int) region.span.getStart() );	// sample off
-					raf.writeLong( 0x06626567206C7000L );		// Pascal style String: "beg lp"
-					raf.writeShort( i2++ );
-					raf.writeInt((int) region.span.getStop() );
-					raf.writeLong( 0x06656E64206C7000L );		// Pascal style String: "end lp"
-				}
-for( i1 = 0; i1 < markers.size(); i1++ ) {
-	raf.writeShort( i2++ );
-					marker = (Marker) markers.get( i1 );
-		raf.writeInt( (int) marker.pos );
-//	raf.writeByte( (marker.name.len() + 1) & 0xFE );
-					raf.writeByte( marker.name.len()  & 0xFF );
-					raf.writeBytes( marker.name);
-					if( (marker.name.len() & 1) == 0 ) {
-						raf.writeByte( 0x00 );
-//					} else {
-//						raf.writeShort( 0x2000 );	// padding space + zero pad to even address
-					}
-				}
-				// ...chunk len update...
-				pos2 = raf.getFilePointer();
-				raf.seek( pos );
-				raf.writeInt( (int) (pos2 - pos - 4) );
-			raf.seek( pos2 );
-			}
-
-			// COMT Chunk
-			str = (String) descr.getProperty( AudioFileInfo.KEY_COMMENT );
-			if( (str != null) && (str.len() > 0) ) {
-				raf.writeInt( COMT_MAGIC );
-	raf.writeInt( (11 + str.len()) & ~1 );
-				raf.writeShort( 1 );			// just one comment
-				// time stamp "seconds since 1904"; this stupid idea dies around 2030
-				// when 32bit unsigned will be overflowed
-
-   protected val SECONDS_FROM_1904_TO_1970 = 2021253247L
-
-raf.writeInt( (int) (System.currentTimeMillis() + SECONDS_FROM_1904_TO_1970) );
-				raf.writeShort( 0 );			// no marker association
-				raf.writeShort( str.len() );// count
-				raf.writeBytes( str );
-				if( (str.len() & 1) == 1 ) {
-					raf.writeByte( 0 );			// pad
-				}
-			}
-
-			// APPL Chunk
-			strBuf	= (byte[]) descr.getProperty( AudioFileInfo.KEY_APPCODE );
-			if( (descr.appCode != null) && (strBuf != null) ){
-				raf.writeInt( APPL_MAGIC );
-				raf.writeInt( 4 + strBuf.len );
-		raf.write( descr.appCode.getBytes(), 0, 4 );
-			raf.write( strBuf );
-				if( strBuf.len % 2 == 1 ) raf.write( 0 ); // pad
-			}
-			
-			// SSND Chunk (Header)
-			raf.writeInt( SSND_MAGIC );
-			ssndLengthOffset = raf.getFilePointer();
-			raf.writeInt( 8);		// + stream.samples * frameLength );
-			raf.writeInt( 0 );		// sample
-raf.writeInt( 0 );		// block size (?!)
-			sampleDataOffset = raf.getFilePointer();
-			
-			updateHeader( descr );
-		}
-		
-		protected void updateHeader(AudioFileInfo descr )
-		throws IOException
-		{
-			final long oldPos	= raf.getFilePointer();
-			final long len		= raf.len();
-			if( len == lastUpdateLength ) return;
-			
-			if( len >= formLengthOffset + 4 ) {
-				raf.seek( formLengthOffset );
-				raf.writeInt( (int) (len - 8) );								// FORM Chunk len
-			}
-			if( len >= commSmpNumOffset + 4 ) {
-				raf.seek( commSmpNumOffset );
-				raf.writeInt( (int) descr.len );								// COMM: Sample-Num
-			}
-			if( len >= ssndLengthOffset +4 ) {
-				raf.seek( ssndLengthOffset );
-				raf.writeInt( (int) (len - (ssndLengthOffset + 4)) );			// SSND Chunk len
-			}
-			raf.seek( oldPos );
-			lastUpdateLength = len;
-		}
-		
-		protected longgetSampleDataOffset()
-		{
-			return sampleDataOffset;
-		}
-		
-		protected ByteOrder getByteOrder()
-		{
-			return byteOrder;
-		}
-		
-		protected void readMarkers()
-		throws IOException
-		{
-			int i, i1, i2, i3;
-			
-			if( markersOffset <= 0L ) return;
-
-			finalList		markers;
-			final byte[]	strBuf 		= new byte[ 64 ];	// to store the names
-			final long		oldPos		= raf.getFilePointer();
-			int				essentials	= loop ? 2 : 0; 	// start+end for sustain-loop
-
-			try {
-				raf.seek( markersOffset );
-				i1 = raf.readUnsignedShort();		// number of markers
-			 	markers = new ArrayList( i1);
-		for( i = i1; i > 0; i-- ) {
-		i3 =raf.readUnsignedShort();	// marker ID
-		i2 = raf.readInt();// marker position (sample off)
-					i1 = raf.readUnsignedByte();	// markerName String-len
-					if( loop && (i3 == loopStart) ) {
-						loopStart	= i2;
-						essentials--;
-					} else if( loop && (i3 == loopEnd) ) {
-					loopEnd		= i2;
-						essentials--;
-					} else {
-						i3	 = Math.min( i1, strBuf.len );
-						raf.readFully( strBuf,0, i3 );
-						i1	-= i3;
-						if( (i3 > 0) && (strBuf[ i3 - 1 ] == 0x20) ) {
-							i3--;	// ignore padding space created by Peak
-						}
-						markers.add( new Marker( i2, new String( strBuf, 0, i3 )));
-					}
-					raf.seek( (raf.getFilePointer() + (i1 + 1)) & ~1 );
-				}
-				afd.setProperty( AudioFileInfo.KEY_MARKERS, markers );
-				if( loop && essentials ==0 ) {
-					afd.setProperty( AudioFileInfo.KEY_LOOP, new Region( new Span( loopStart, loopEnd ), NAME_LOOP ));
-				}
-			}
-			finally {
-				raf.seek( oldPos );
-			}
-		}
-		
-		protected void readAppCode()
-		throws IOException
-		{
-			if( appCodeOff > 0 ) {
-				final byte[]	strBuf = new byte[ appCodeLen ];
-				final long		oldPos = raf.getFilePointer();
-	raf.seek( appCodeOff );
-				raf.readFully( strBuf );
-				afd.setProperty( AudioFileInfo.KEY_APPCODE, strBuf );
-				raf.seek( oldPos );
-	} else {
-				afd.setProperty( AudioFileInfo.KEY_APPCODE, null );
-			}
-		}
-	} // class AIFFHeader
-
 	private abstract class AbstractRIFFHeader
 	extends AudioFileHeader
 	{

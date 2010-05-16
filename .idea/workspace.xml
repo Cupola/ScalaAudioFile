@@ -60,19 +60,73 @@
   <component name="FileColors" enabled="true" enabledForTabs="true" />
   <component name="FileEditorManager">
     <leaf>
-      <file leaf-file-name="BufferHandler.scala" pinned="false" current="false" current-in-tab="false">
+      <file leaf-file-name="BufferHandler.scala" pinned="false" current="true" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/src/main/scala/de/sciss/synth/io/BufferHandler.scala">
           <provider selected="true" editor-type-id="text-editor">
-            <state line="0" column="25" selection-start="25" selection-end="25" vertical-scroll-proportion="0.0">
+            <state line="49" column="46" selection-start="1735" selection-end="1735" vertical-scroll-proportion="0.032051284">
               <folding />
             </state>
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="ScalaAudioFile.scala" pinned="false" current="true" current-in-tab="true">
+      <file leaf-file-name="ScalaAudioFile.scala" pinned="false" current="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/src/main/scala/de/sciss/synth/io/ScalaAudioFile.scala">
           <provider selected="true" editor-type-id="text-editor">
-            <state line="13" column="22" selection-start="336" selection-end="336" vertical-scroll-proportion="0.25896415">
+            <state line="0" column="0" selection-start="0" selection-end="987" vertical-scroll-proportion="0.0">
+              <folding />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="AudioFileSpec.scala" pinned="false" current="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/src/main/scala/de/sciss/synth/io/AudioFileSpec.scala">
+          <provider selected="true" editor-type-id="text-editor">
+            <state line="31" column="47" selection-start="1178" selection-end="1178" vertical-scroll-proportion="0.0">
+              <folding />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="SampleFormat.scala" pinned="false" current="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/src/main/scala/de/sciss/synth/io/SampleFormat.scala">
+          <provider selected="true" editor-type-id="text-editor">
+            <state line="31" column="51" selection-start="1117" selection-end="1136" vertical-scroll-proportion="0.0">
+              <folding />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="AudioFile.scala" pinned="false" current="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/src/main/scala/de/sciss/synth/io/AudioFile.scala">
+          <provider selected="true" editor-type-id="text-editor">
+            <state line="87" column="39" selection-start="3906" selection-end="3906" vertical-scroll-proportion="0.0">
+              <folding />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="AudioFileType.scala" pinned="false" current="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/src/main/scala/de/sciss/synth/io/AudioFileType.scala">
+          <provider selected="true" editor-type-id="text-editor">
+            <state line="39" column="43" selection-start="1291" selection-end="1291" vertical-scroll-proportion="0.0">
+              <folding />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="AudioFileHeader.scala" pinned="false" current="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/src/main/scala/de/sciss/synth/io/AudioFileHeader.scala">
+          <provider selected="true" editor-type-id="text-editor">
+            <state line="128" column="38" selection-start="4279" selection-end="4279" vertical-scroll-proportion="0.0">
+              <folding />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="AIFFHeader.scala" pinned="false" current="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/src/main/scala/de/sciss/synth/io/impl/AIFFHeader.scala">
+          <provider selected="true" editor-type-id="text-editor">
+            <state line="136" column="42" selection-start="5708" selection-end="5708" vertical-scroll-proportion="0.0">
               <folding />
             </state>
           </provider>
@@ -88,20 +142,22 @@
   <component name="IdeDocumentHistory">
     <option name="changedFiles">
       <list>
-        <option value="$PROJECT_DIR$/src/main/scala/de/sciss/audiofile/AudioFileImpl.scala" />
-        <option value="$PROJECT_DIR$/src/main/scala/de/sciss/audiofile/AudioFileInfo.scala" />
-        <option value="$PROJECT_DIR$/src/main/scala/de/sciss/audiofile/BufferReader.scala" />
         <option value="$PROJECT_DIR$/src/main/scala/de/sciss/audiofile/BufferWriter.scala" />
         <option value="$PROJECT_DIR$/src/main/scala/de/sciss/audiofile/BufferHandler.scala" />
         <option value="$PROJECT_DIR$/src/main/scala/de/sciss/audiofile/AudioFileHeader.scala" />
         <option value="$PROJECT_DIR$/src/main/scala/de/sciss/audiofile/AudioFile.scala" />
         <option value="$PROJECT_DIR$/src/main/scala/de/sciss/audiofile/ScalaAudioFile.scala" />
         <option value="$PROJECT_DIR$/src/main/scala/de/sciss/synth/ScalaAudioFile.scala" />
-        <option value="$PROJECT_DIR$/src/main/scala/de/sciss/synth/io/AudioFile.scala" />
-        <option value="$PROJECT_DIR$/src/main/scala/de/sciss/synth/io/AudioFileHeader.scala" />
         <option value="$PROJECT_DIR$/src/main/scala/de/sciss/synth/io/AudioFileInfo.scala" />
-        <option value="$PROJECT_DIR$/src/main/scala/de/sciss/synth/io/BufferHandler.scala" />
         <option value="$PROJECT_DIR$/src/main/scala/de/sciss/synth/io/ScalaAudioFile.scala" />
+        <option value="$PROJECT_DIR$/src/main/scala/de/sciss/synth/io/SampleResolution.scala" />
+        <option value="$PROJECT_DIR$/src/main/scala/de/sciss/synth/io/AudioFileType.scala" />
+        <option value="$PROJECT_DIR$/src/main/scala/de/sciss/synth/io/AudioFileSpec.scala" />
+        <option value="$PROJECT_DIR$/src/main/scala/de/sciss/synth/io/BufferHandler.scala" />
+        <option value="$PROJECT_DIR$/src/main/scala/de/sciss/synth/io/AudioFileHeader.scala" />
+        <option value="$PROJECT_DIR$/src/main/scala/de/sciss/synth/io/AudioFile.scala" />
+        <option value="$PROJECT_DIR$/src/main/scala/de/sciss/synth/io/impl/AIFFHeader.scala" />
+        <option value="$PROJECT_DIR$/src/main/scala/de/sciss/synth/io/SampleFormat.scala" />
       </list>
     </option>
   </component>
@@ -140,6 +196,7 @@
       <sortByType />
     </navigator>
     <panes>
+      <pane id="Scope" />
       <pane id="ProjectPane">
         <subPane>
           <PATH>
@@ -193,6 +250,40 @@
               <option name="myItemId" value="scala" />
               <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
             </PATH_ELEMENT>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="io" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
+            </PATH_ELEMENT>
+          </PATH>
+          <PATH>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="ScalaAudioFile" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.ProjectViewProjectNode" />
+            </PATH_ELEMENT>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="ScalaAudioFile" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
+            </PATH_ELEMENT>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="src" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
+            </PATH_ELEMENT>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="main" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
+            </PATH_ELEMENT>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="scala" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
+            </PATH_ELEMENT>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="io" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
+            </PATH_ELEMENT>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="BufferHandler.scala" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.ClassesTreeStructureProvider$PsiClassOwnerTreeNode" />
+            </PATH_ELEMENT>
           </PATH>
           <PATH>
             <PATH_ELEMENT>
@@ -214,7 +305,6 @@
           </PATH>
         </subPane>
       </pane>
-      <pane id="Scope" />
       <pane id="Favorites" />
       <pane id="PackagesPane" />
     </panes>
@@ -403,21 +493,22 @@
     <supportedVersion>125</supportedVersion>
   </component>
   <component name="ToolWindowManager">
-    <frame x="8" y="22" width="1377" height="876" extended-state="0" />
+    <frame x="15" y="24" width="1377" height="876" extended-state="0" />
     <editor active="true" />
     <layout>
       <window_info id="Changes" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="7" side_tool="false" content_ui="tabs" />
       <window_info id="Palette" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="3" side_tool="false" content_ui="tabs" />
-      <window_info id="TODO" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="6" side_tool="false" content_ui="tabs" />
       <window_info id="Ant Build" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.25" sideWeight="0.5" order="1" side_tool="false" content_ui="tabs" />
-      <window_info id="Structure" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.25" sideWeight="0.5" order="1" side_tool="true" content_ui="tabs" />
-      <window_info id="Commander" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.4" sideWeight="0.5" order="0" side_tool="false" content_ui="tabs" />
-      <window_info id="Maven Projects" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="3" side_tool="false" content_ui="tabs" />
-      <window_info id="Dependency Viewer" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="7" side_tool="false" content_ui="tabs" />
-      <window_info id="Project" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" weight="0.24924698" sideWeight="0.5" order="0" side_tool="false" content_ui="tabs" />
       <window_info id="Debug" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.4" sideWeight="0.5" order="3" side_tool="false" content_ui="tabs" />
-      <window_info id="Run" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="2" side_tool="false" content_ui="tabs" />
       <window_info id="Version Control" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="7" side_tool="false" content_ui="tabs" />
+      <window_info id="Messages" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" weight="0.32992327" sideWeight="0.5" order="-1" side_tool="false" content_ui="tabs" />
+      <window_info id="TODO" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="6" side_tool="false" content_ui="tabs" />
+      <window_info id="Structure" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.25" sideWeight="0.5" order="1" side_tool="true" content_ui="tabs" />
+      <window_info id="Maven Projects" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="3" side_tool="false" content_ui="tabs" />
+      <window_info id="Commander" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.4" sideWeight="0.5" order="0" side_tool="false" content_ui="tabs" />
+      <window_info id="Project" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" weight="0.24924698" sideWeight="0.6611253" order="0" side_tool="false" content_ui="tabs" />
+      <window_info id="Dependency Viewer" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="7" side_tool="false" content_ui="tabs" />
+      <window_info id="Run" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="2" side_tool="false" content_ui="tabs" />
       <window_info id="Cvs" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.25" sideWeight="0.5" order="4" side_tool="false" content_ui="tabs" />
       <window_info id="Message" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="0" side_tool="false" content_ui="tabs" />
       <window_info id="Find" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="1" side_tool="false" content_ui="tabs" />
@@ -455,38 +546,63 @@
   <component name="XDebuggerManager">
     <breakpoint-manager />
   </component>
+  <component name="antWorkspaceConfiguration">
+    <option name="IS_AUTOSCROLL_TO_SOURCE" value="false" />
+    <option name="FILTER_TARGETS" value="false" />
+  </component>
   <component name="editorHistoryManager">
-    <entry file="file://$PROJECT_DIR$/src/main/scala/de/sciss/synth/io/AudioFile.scala">
+    <entry file="file://$PROJECT_DIR$/src/main/scala/de/sciss/synth/io/ScalaAudioFile.scala">
       <provider selected="true" editor-type-id="text-editor">
-        <state line="45" column="22" selection-start="2097" selection-end="2100" vertical-scroll-proportion="0.91463417">
+        <state line="0" column="0" selection-start="0" selection-end="987" vertical-scroll-proportion="0.0">
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/src/main/scala/de/sciss/synth/io/AudioFileSpec.scala">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="31" column="47" selection-start="1178" selection-end="1178" vertical-scroll-proportion="0.0">
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/src/main/scala/de/sciss/synth/io/AudioFileType.scala">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="39" column="43" selection-start="1291" selection-end="1291" vertical-scroll-proportion="0.0">
           <folding />
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/src/main/scala/de/sciss/synth/io/AudioFileHeader.scala">
       <provider selected="true" editor-type-id="text-editor">
-        <state line="6" column="25" selection-start="113" selection-end="113" vertical-scroll-proportion="0.01992032">
+        <state line="128" column="38" selection-start="4279" selection-end="4279" vertical-scroll-proportion="0.0">
           <folding />
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/src/main/scala/de/sciss/synth/io/AudioFileInfo.scala">
+    <entry file="file://$PROJECT_DIR$/src/main/scala/de/sciss/synth/io/AudioFile.scala">
       <provider selected="true" editor-type-id="text-editor">
-        <state line="0" column="25" selection-start="25" selection-end="25" vertical-scroll-proportion="0.0">
+        <state line="87" column="39" selection-start="3906" selection-end="3906" vertical-scroll-proportion="0.0">
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/src/main/scala/de/sciss/synth/io/impl/AIFFHeader.scala">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="136" column="42" selection-start="5708" selection-end="5708" vertical-scroll-proportion="0.0">
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/src/main/scala/de/sciss/synth/io/SampleFormat.scala">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="31" column="51" selection-start="1117" selection-end="1136" vertical-scroll-proportion="0.0">
           <folding />
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/src/main/scala/de/sciss/synth/io/BufferHandler.scala">
       <provider selected="true" editor-type-id="text-editor">
-        <state line="0" column="25" selection-start="25" selection-end="25" vertical-scroll-proportion="0.0">
-          <folding />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/src/main/scala/de/sciss/synth/io/ScalaAudioFile.scala">
-      <provider selected="true" editor-type-id="text-editor">
-        <state line="13" column="22" selection-start="336" selection-end="336" vertical-scroll-proportion="0.25896415">
+        <state line="49" column="46" selection-start="1735" selection-end="1735" vertical-scroll-proportion="0.032051284">
           <folding />
         </state>
       </provider>
