@@ -22,7 +22,7 @@ Currently, only the AIFF decoder has been implemented. AIFF files are the only o
 
 To open an audio file for reading: @AudioFile.openRead( aFile )@ or @AudioFile.openRead( anInputStream )@. The @InputStream@ variant has limited functionality, e.g. you cannot seek into the file, but only read sequentially. The stream variant can be used to decode files from an HTTP connection or in-memory (@ByteArrayInputStream@).
 
-To the user, frame data is always represented as interleaved 32-bit floating point data, so you create a user buffer through @Array.ofDim[ Float ]( numChannels, bufFrames )@.
+To the user, frame data is always represented as de-interleaved 32-bit floating point data, so you create a user buffer through @Array.ofDim[ Float ]( numChannels, bufFrames )@.
 
 The @AudioFile@ implementation is currently not thread-safe, but synchronization is planned.
 
