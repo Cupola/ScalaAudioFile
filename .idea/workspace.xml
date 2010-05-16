@@ -59,53 +59,7 @@
   </component>
   <component name="FileColors" enabled="true" enabledForTabs="true" />
   <component name="FileEditorManager">
-    <leaf>
-      <file leaf-file-name="BufferHandler.scala" pinned="false" current="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/src/main/scala/de/sciss/synth/io/BufferHandler.scala">
-          <provider selected="true" editor-type-id="text-editor">
-            <state line="784" column="1" selection-start="27284" selection-end="27284" vertical-scroll-proportion="0.0">
-              <folding />
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file leaf-file-name="ScalaAudioFile.scala" pinned="false" current="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/src/main/scala/de/sciss/synth/io/ScalaAudioFile.scala">
-          <provider selected="true" editor-type-id="text-editor">
-            <state line="0" column="0" selection-start="0" selection-end="987" vertical-scroll-proportion="0.0">
-              <folding />
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file leaf-file-name="AudioFileSpec.scala" pinned="false" current="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/src/main/scala/de/sciss/synth/io/AudioFileSpec.scala">
-          <provider selected="true" editor-type-id="text-editor">
-            <state line="31" column="47" selection-start="1178" selection-end="1178" vertical-scroll-proportion="0.0">
-              <folding />
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file leaf-file-name="SampleFormat.scala" pinned="false" current="true" current-in-tab="true">
-        <entry file="file://$PROJECT_DIR$/src/main/scala/de/sciss/synth/io/SampleFormat.scala">
-          <provider selected="true" editor-type-id="text-editor">
-            <state line="62" column="21" selection-start="2395" selection-end="2395" vertical-scroll-proportion="0.60040987">
-              <folding />
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file leaf-file-name="AudioFile.scala" pinned="false" current="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/src/main/scala/de/sciss/synth/io/AudioFile.scala">
-          <provider selected="true" editor-type-id="text-editor">
-            <state line="130" column="0" selection-start="5248" selection-end="5248" vertical-scroll-proportion="0.0">
-              <folding />
-            </state>
-          </provider>
-        </entry>
-      </file>
-    </leaf>
+    <leaf />
   </component>
   <component name="FindManager">
     <FindUsagesManager>
@@ -115,10 +69,6 @@
   <component name="IdeDocumentHistory">
     <option name="changedFiles">
       <list>
-        <option value="$PROJECT_DIR$/src/main/scala/de/sciss/audiofile/BufferWriter.scala" />
-        <option value="$PROJECT_DIR$/src/main/scala/de/sciss/audiofile/BufferHandler.scala" />
-        <option value="$PROJECT_DIR$/src/main/scala/de/sciss/audiofile/AudioFileHeader.scala" />
-        <option value="$PROJECT_DIR$/src/main/scala/de/sciss/audiofile/AudioFile.scala" />
         <option value="$PROJECT_DIR$/src/main/scala/de/sciss/audiofile/ScalaAudioFile.scala" />
         <option value="$PROJECT_DIR$/src/main/scala/de/sciss/synth/ScalaAudioFile.scala" />
         <option value="$PROJECT_DIR$/src/main/scala/de/sciss/synth/io/AudioFileInfo.scala" />
@@ -129,8 +79,12 @@
         <option value="$PROJECT_DIR$/src/main/scala/de/sciss/synth/io/AudioFileHeader.scala" />
         <option value="$PROJECT_DIR$/src/main/scala/de/sciss/synth/io/BufferHandler.scala" />
         <option value="$PROJECT_DIR$/src/main/scala/de/sciss/synth/io/impl/AIFFHeader.scala" />
-        <option value="$PROJECT_DIR$/src/main/scala/de/sciss/synth/io/AudioFile.scala" />
         <option value="$PROJECT_DIR$/src/main/scala/de/sciss/synth/io/SampleFormat.scala" />
+        <option value="$PROJECT_DIR$/src/main/scala/de/sciss/synth/io/impl/WaveHeader.scala" />
+        <option value="$PROJECT_DIR$/src/main/scala/de/sciss/synth/io/impl/NeXTHeader.scala" />
+        <option value="$PROJECT_DIR$/src/main/scala/de/sciss/synth/io/impl/IRCAMHeader.scala" />
+        <option value="$PROJECT_DIR$/src/main/scala/de/sciss/synth/io/AudioFile.scala" />
+        <option value="$PROJECT_DIR$/src/main/scala/de/sciss/synth/io/impl/RawHeader.scala" />
       </list>
     </option>
   </component>
@@ -256,6 +210,36 @@
             <PATH_ELEMENT>
               <option name="myItemId" value="BufferHandler.scala" />
               <option name="myItemType" value="com.intellij.ide.projectView.impl.ClassesTreeStructureProvider$PsiClassOwnerTreeNode" />
+            </PATH_ELEMENT>
+          </PATH>
+          <PATH>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="ScalaAudioFile" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.ProjectViewProjectNode" />
+            </PATH_ELEMENT>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="ScalaAudioFile" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
+            </PATH_ELEMENT>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="src" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
+            </PATH_ELEMENT>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="main" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
+            </PATH_ELEMENT>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="scala" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
+            </PATH_ELEMENT>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="io" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
+            </PATH_ELEMENT>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="impl" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
             </PATH_ELEMENT>
           </PATH>
           <PATH>
@@ -524,27 +508,6 @@
     <option name="FILTER_TARGETS" value="false" />
   </component>
   <component name="editorHistoryManager">
-    <entry file="file://$PROJECT_DIR$/src/main/scala/de/sciss/synth/io/ScalaAudioFile.scala">
-      <provider selected="true" editor-type-id="text-editor">
-        <state line="0" column="0" selection-start="0" selection-end="987" vertical-scroll-proportion="0.0">
-          <folding />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/src/main/scala/de/sciss/synth/io/AudioFileSpec.scala">
-      <provider selected="true" editor-type-id="text-editor">
-        <state line="31" column="47" selection-start="1178" selection-end="1178" vertical-scroll-proportion="0.0">
-          <folding />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/src/main/scala/de/sciss/synth/io/BufferHandler.scala">
-      <provider selected="true" editor-type-id="text-editor">
-        <state line="784" column="1" selection-start="27284" selection-end="27284" vertical-scroll-proportion="0.0">
-          <folding />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/src/main/scala/de/sciss/synth/io/impl/AIFFHeader.scala">
       <provider selected="true" editor-type-id="text-editor">
         <state line="242" column="33" selection-start="10595" selection-end="10595" vertical-scroll-proportion="0.8397436">
@@ -566,9 +529,30 @@
         </state>
       </provider>
     </entry>
+    <entry file="file://$PROJECT_DIR$/src/main/scala/de/sciss/synth/io/impl/RawHeader.scala">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="0" column="0" selection-start="0" selection-end="0" vertical-scroll-proportion="-0.25">
+          <folding />
+        </state>
+      </provider>
+    </entry>
     <entry file="file://$PROJECT_DIR$/src/main/scala/de/sciss/synth/io/AudioFile.scala">
       <provider selected="true" editor-type-id="text-editor">
-        <state line="130" column="0" selection-start="5248" selection-end="5248" vertical-scroll-proportion="0.0">
+        <state line="696" column="1" selection-start="24330" selection-end="24330" vertical-scroll-proportion="0.775641">
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/src/main/scala/de/sciss/synth/io/impl/NeXTHeader.scala">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="3" column="3" selection-start="36" selection-end="36" vertical-scroll-proportion="0.09615385">
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/src/main/scala/de/sciss/synth/io/impl/WaveHeader.scala">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="7" column="85" selection-start="232" selection-end="232" vertical-scroll-proportion="0.23178808">
           <folding />
         </state>
       </provider>
@@ -576,6 +560,34 @@
     <entry file="file://$PROJECT_DIR$/src/main/scala/de/sciss/synth/io/SampleFormat.scala">
       <provider selected="true" editor-type-id="text-editor">
         <state line="62" column="21" selection-start="2395" selection-end="2395" vertical-scroll-proportion="0.60040987">
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/src/main/scala/de/sciss/synth/io/AudioFileSpec.scala">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="31" column="47" selection-start="1178" selection-end="1178" vertical-scroll-proportion="0.81557375">
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/src/main/scala/de/sciss/synth/io/ScalaAudioFile.scala">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="0" column="0" selection-start="0" selection-end="987" vertical-scroll-proportion="0.0">
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/src/main/scala/de/sciss/synth/io/BufferHandler.scala">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="784" column="1" selection-start="27284" selection-end="27284" vertical-scroll-proportion="0.897541">
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/src/main/scala/de/sciss/synth/io/impl/IRCAMHeader.scala">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="0" column="0" selection-start="0" selection-end="0" vertical-scroll-proportion="0.0">
           <folding />
         </state>
       </provider>
