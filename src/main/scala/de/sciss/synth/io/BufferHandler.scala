@@ -63,24 +63,24 @@ trait BufferBidi extends BufferReader with BufferWriter
 
 object BufferHandler {
    abstract class Byte extends BufferHandler {
-      protected val bitsPerSample   = 8
+      protected def bitsPerSample   = 8
       protected val arrayBuf        = new Array[ SByte ]( byteBuf.capacity() )
    }
 
    abstract class UByte extends BufferHandler {
-      protected val bitsPerSample   = 8
+      protected def bitsPerSample   = 8
       protected val arrayBuf        = new Array[ SByte ]( byteBuf.capacity() )
    }
 
    abstract class Short extends BufferHandler {
-      protected val bitsPerSample   = 16
+      protected def bitsPerSample   = 16
       byteBuf.clear
       protected val viewBuf	      = byteBuf.asShortBuffer()
       protected val arrayBuf	      = new Array[ SShort ]( viewBuf.capacity() )
    }
 
    abstract class ThreeBytes extends BufferHandler {
-      protected val bitsPerSample   = 24
+      protected def bitsPerSample   = 24
       // note : it's *not* faster to use ByteBuffer.allocate()
       // and ByteBuffer.array() than this implementation
       // (using ByteBuffer.allocateDirect() and bulk get into a separate arrayBuf)
@@ -89,21 +89,21 @@ object BufferHandler {
    }
 
    abstract class Int extends BufferHandler {
-      protected val bitsPerSample   = 32
+      protected def bitsPerSample   = 32
       byteBuf.clear()
       protected val viewBuf         = byteBuf.asIntBuffer()
       protected val arrayBuf	      = new Array[ SInt ]( viewBuf.capacity() )
    }
 
    abstract class Float extends BufferHandler {
-      protected val bitsPerSample   = 32
+      protected def bitsPerSample   = 32
       byteBuf.clear()
       protected val viewBuf	      = byteBuf.asFloatBuffer()
       protected val arrayBuf	      = new Array[ SFloat ]( viewBuf.capacity() )
    }
 
    abstract class Double extends BufferHandler {
-      protected val bitsPerSample   = 64
+      protected def bitsPerSample   = 64
       byteBuf.clear()
       protected val viewBuf	      = byteBuf.asDoubleBuffer()
       protected val arrayBuf	      = new Array[ SDouble ]( viewBuf.capacity() )

@@ -29,7 +29,7 @@
 package de.sciss.synth.io
 
 import java.nio.ByteOrder
-import java.io.{ DataInputStream, DataOutputStream, IOException }
+import java.io.{ DataInputStream, DataOutputStream, IOException, RandomAccessFile }
 
 object AudioFileHeader {
    @throws( classOf[ IOException ])
@@ -94,6 +94,8 @@ object AudioFileHeader {
 trait AudioFileHeaderFactory {
    def createHeaderReader : Option[ AudioFileHeaderReader ]
    def createHeaderWriter : Option[ AudioFileHeaderWriter ]
+
+   @throws( classOf[ IOException ])
    def identify( dis: DataInputStream ) : Boolean
 }
 
@@ -123,10 +125,16 @@ trait AudioFileHeader {
 trait AudioFileHeaderReader {
    /**
     *    Reads in the header information. Seek position
-    *    should remain at the first frame of the audio data. 
+    *    should remain at the first frame of the audio data.
+    *    If the header does not support a plain input stream
+    *    but requires random access or length information,
+    *    it should throw an IOException
     */
    @throws( classOf[ IOException ])
    def read( dis: DataInputStream ) : AudioFileHeader
+
+   @throws( classOf[ IOException ])
+   def read( raf: RandomAccessFile ) : AudioFileHeader
 
    @inline protected def formatError = throw new IOException( "A header format error occurred" )
 

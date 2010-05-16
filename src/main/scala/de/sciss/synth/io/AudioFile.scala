@@ -46,11 +46,10 @@
 
 package de.sciss.synth.io
 
-import impl.AIFFHeader
-import java.io.{ DataInputStream, File, FileInputStream, IOException, InputStream, RandomAccessFile }
-import java.nio.{ ByteBuffer, ByteOrder }
-import java.nio.channels.{ Channels, FileChannel, NonWritableChannelException, ReadableByteChannel }
-import java.nio.charset.{ Charset, CharsetDecoder, CharsetEncoder, CoderResult }
+import java.io.{ BufferedInputStream, DataInputStream, File, FileInputStream, IOException, InputStream,
+                 RandomAccessFile }
+import java.nio.{ ByteBuffer }
+import java.nio.channels.{ Channels }
 import math._
 
 /**
@@ -124,19 +123,24 @@ object AudioFile {
    @throws( classOf[ IOException ])
    def openRead( f: File ) : AudioFile = {
       val raf        = new RandomAccessFile( f, "r" )
-      val dis        = new DataInputStream( Channels.newInputStream( raf.getChannel() ))
-      val (afh, buf) = openRead( dis )
+      val dis        = dataInput( Channels.newInputStream( raf.getChannel() ))
+      val afhr       = createHeaderReader( dis )
+      raf.seek( 0L ) // BufferedInputStream did advance the position!
+      val afh        = afhr.read( raf )
+      val buf        = createBuffer( afh )
       val spec       = afh.spec
       val sf         = spec.sampleFormat
       val br         = sf.readerFactory.map( _.apply( raf.getChannel(), buf, spec.numChannels ))
          .getOrElse( noDecoder( sf ))
-      new ReadableFileImpl( dis, f, raf, afh, br )
+      new ReadableFileImpl( f, raf, afh, br )
    }
 
    @throws( classOf[ IOException ])
    def openRead( is: InputStream ) : AudioFile = {
-      val dis        = new DataInputStream( is )
-      val (afh, buf) = openRead( dis )
+      val dis        = dataInput( is )
+      val afhr       = createHeaderReader( dis )
+      val afh        = afhr.read( dis )
+      val buf        = createBuffer( afh )
       val spec       = afh.spec
       val sf         = spec.sampleFormat
       val br         = sf.readerFactory.map( _.apply( Channels.newChannel( dis ), buf, spec.numChannels ))
@@ -145,15 +149,10 @@ object AudioFile {
    }
 
    @throws( classOf[ IOException ])
-   private def openRead( dis: DataInputStream ) : (AudioFileHeader, ByteBuffer) = {
+   private def createHeaderReader( dis: DataInputStream ) : AudioFileHeaderReader = {
       val fileType   = retrieveType( dis ).getOrElse( throw new IOException( "Unrecognized audio file format" ))
       val factory    = fileType.factory.getOrElse( noDecoder( fileType ))
-      val afhr       = factory.createHeaderReader.getOrElse( noDecoder( fileType ))
-      val afh        = afhr.read( dis )
-      val spec       = afh.spec
-      val sf         = spec.sampleFormat
-      val buf        = createBuffer( afh )
-      (afh, buf)
+      factory.createHeaderReader.getOrElse( noDecoder( fileType ))
    }
 
    private def createBuffer( afh: AudioFileHeader ) : ByteBuffer = {
@@ -164,6 +163,9 @@ object AudioFile {
 		val byteBuf    = ByteBuffer.allocateDirect( bufSize )
 		byteBuf.order( afh.byteOrder )
    }
+
+   private def dataInput( is: InputStream ) : DataInputStream =
+      new DataInputStream( new BufferedInputStream( is, 1024 ))
    
    private def noDecoder( msg: AnyRef ) = throw new IOException( "No decoder for " + msg )
 
@@ -227,7 +229,16 @@ object AudioFile {
 
    @throws( classOf[ IOException ])
    def retrieveType( dis: DataInputStream ) : Option[ AudioFileType ] =
-      AudioFileType.known.find( _.factory.map( _.identify( dis )).getOrElse( false ))
+      AudioFileType.known.find( _.factory.map( f => {
+         dis.mark( 1024 )
+         try {
+            f.identify( dis )
+         } catch {
+            case e => false
+         } finally {
+            dis.reset()
+         }
+      }).getOrElse( false ))
 //            case WAVEHeader.RIFF_MAGIC => {					         // -------- probably WAVE --------
 //               if( len >= 12 ) {
 //                  raf.readInt()
@@ -267,12 +278,13 @@ object AudioFile {
 //	}
 
    private trait Basic extends AudioFile {
-      var framePosition: Long = 0L
+      protected var framePositionVar: Long = 0L
 
       protected def afh: AudioFileHeader
       protected def bh: BufferHandler 
 
       def numFrames : Long       = afh.spec.numFrames
+      def framePosition: Long    = framePositionVar
       def spec : AudioFileSpec   = afh.spec
 
       @throws( classOf[ IOException ])
@@ -300,12 +312,12 @@ object AudioFile {
 
    private trait Readable extends Basic {
       protected def bh: BufferReader
-      protected def dis: DataInputStream
+//      protected def di: DataInput
 
       @throws( classOf[ IOException ])
       def readFrames( data: Frames, off: Int, len: Int ) : AudioFile = {
          bh.readFrames( data, off, len )
-         framePosition += len
+         framePositionVar += len
          this
       }
    }
@@ -325,21 +337,21 @@ object AudioFile {
       @throws( classOf[ IOException ])
       def truncate : AudioFile = opNotSupported
 
-      @throws( classOf[ IOException ])
-      def close : AudioFile = {
-         dis.close()
-         this
-      }
+//      @throws( classOf[ IOException ])
+//      def close : AudioFile = {
+//         dis.close()
+//         this
+//      }
    }
 
-   private trait StreamImpl extends Basic {
+   private trait StreamLike extends Basic {
       def file: Option[ File ] = None
 
       @throws( classOf[ IOException ])
       def seekFrame( frame : Long ) : AudioFile = opNotSupported
    }
 
-   private trait FileImpl extends Basic {
+   private trait FileLike extends Basic {
       protected def f: File
       protected def raf: RandomAccessFile
       
@@ -351,20 +363,38 @@ object AudioFile {
       def seekFrame( frame : Long ) : AudioFile = {
          val physical = sampleDataOffset + frame * bh.frameSize
          raf.seek( physical )
-         framePosition = frame
+         framePositionVar = frame
+         this
+      }
+   }
+
+   private trait ReadOnlyFileLike extends FileLike with ReadOnly {
+      @throws( classOf[ IOException ])
+      def close : AudioFile = {
+         raf.close()
+         this
+      }
+   }
+
+   private trait ReadOnlyStreamLike extends StreamLike with ReadOnly {
+      protected def dis: DataInputStream
+
+      @throws( classOf[ IOException ])
+      def close : AudioFile = {
+         dis.close()
          this
       }
    }
 
    private class ReadableStreamImpl( protected val dis: DataInputStream, protected val afh: AudioFileHeader,
                                      protected val bh: BufferReader )
-   extends Basic with ReadOnly with StreamImpl {
+   extends ReadOnlyStreamLike {
    }
 
-   private class ReadableFileImpl( protected val dis: DataInputStream, protected val f: File,
+   private class ReadableFileImpl( protected val f: File,
                                    protected val raf: RandomAccessFile, protected val afh: AudioFileHeader,
                                    protected val bh: BufferReader )
-   extends Basic with ReadOnly with FileImpl {
+   extends ReadOnlyFileLike {
    }
 
 /*
@@ -546,6 +576,9 @@ trait AudioFile {
 	 */
 	def framePosition : Long
 
+   @throws( classOf[ IOException ])
+   final def framePosition_=( frame: Long ) : Unit = seekFrame( frame )
+
 	/**
 	 *	Reads sample frames from the current position
 	 *
@@ -565,6 +598,10 @@ trait AudioFile {
 	 */
    @throws( classOf[ IOException ])
 	def readFrames( data: Frames, off: Int, len: Int ) : AudioFile
+
+   @throws( classOf[ IOException ])
+	final def readFrames( data: Frames ) : AudioFile =
+      readFrames( data, 0, data.find( _ != null ).map( _.length ).getOrElse( 0 ))
 
 	/**
 	 *	Writessample frames to the file starting at thecurrent position.
@@ -587,6 +624,10 @@ trait AudioFile {
 	 */
    @throws( classOf[ IOException ])
 	def writeFrames( data: Frames, off: Int, len : Int ) : AudioFile
+
+   @throws( classOf[ IOException ])
+	final def writeFrames( data: Frames ) : AudioFile =
+      writeFrames( data, 0, data.find( _ != null ).map( _.length ).getOrElse( 0 ))
 
 	/**
 	 *	Returns the number of frames
@@ -611,9 +652,13 @@ trait AudioFile {
 	 *
 	 *	@return	the number of channels
 	 */
-   def numChannels : Int = spec.numChannels
+   final def numChannels : Int = spec.numChannels
 
-//   def sampleRate: Double = spec.sampleRate
+   final def sampleRate: Double = spec.sampleRate
+
+   final def sampleFormat: SampleFormat = spec.sampleFormat
+
+   final def fileType: AudioFileType = spec.fileType
 
 	/**
     *	Truncates the file to the size represented

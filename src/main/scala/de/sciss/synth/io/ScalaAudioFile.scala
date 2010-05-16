@@ -36,8 +36,18 @@ object ScalaAudioFile {
    def versionString = (version + 0.001).toString.substring( 0, 4 )
 
    def main( args: Array[ String ]) {
-      printInfo
-      System.exit( 1 )
+      args.take( 2 ) match {
+         case Array( "--test", path ) => {
+            val af = AudioFile.openRead( new java.io.File( path ))
+            println( af.spec.toString )
+            af.close
+            System.exit( 0 )
+         }
+         case _ => {
+            printInfo
+            System.exit( 1 )
+         }
+      }
    }
 
    def printInfo {
