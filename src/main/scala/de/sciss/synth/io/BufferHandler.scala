@@ -391,8 +391,7 @@ object BufferReader {
    }
 
    trait DoubleLike extends BufferReader {
-      protected val viewBuf : DoubleBuffer
-      protected val arrayBuf : Array[ SDouble ]
+      me: BufferHandler.Double =>
 
       def readFrames( frames: Frames, off: SInt, len: SInt ) {
          var remaining  = len
@@ -687,8 +686,7 @@ object BufferWriter {
    }
 
    trait DoubleLike extends BufferWriter {
-      protected val viewBuf : DoubleBuffer
-      protected val arrayBuf : Array[ SDouble ]
+      me: BufferHandler.Double =>
 
       def writeFrames( frames: Frames, off: SInt, len: SInt ) {
          var remaining  = len
@@ -780,8 +778,7 @@ object BufferBidi {
    }
 
    object Double extends BufferBidiFactory
-   case class Double( protected val read: ReadableByteChannel, protected val write: WritableByteChannel,
-                      protected val byteBuf: ByteBuffer, numChannels: SInt )
+   case class Double( read: ReadableByteChannel, write: WritableByteChannel, byteBuf: ByteBuffer, numChannels: SInt )
    extends BufferHandler.Double with BufferReader.DoubleLike with BufferWriter.DoubleLike with BufferBidi {
       checkCapacity
    }
