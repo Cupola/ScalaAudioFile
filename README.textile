@@ -28,6 +28,10 @@ The @AudioFile@ implementation is currently not thread-safe, but synchronization
 
 For all further information, please refer to the API docs. They can be created with @sbt doc@.
 
+h3. performance
+
+A preliminary test has shown that performance of ScalaAudioFile and ScissLib is practially identical (which is natural since the buffer reader is virtually the same), yielding for a complete read-out of a 6-channels 8 minutes floating point AIFF file (c. 500 MB) approximately 17 seconds. As a comparision, SuperCollider language (with class SoundFile and libsndfile back-end) requires the same amount of time (17 seconds), however without performing de-interleaving. Further tests need to measure the performance of other sample formats (such as int24), as well as writing performance.
+
 h3. download
 
 The current version can be downloaded from "github.com/Sciss/ScalaAudioFile":http://github.com/Sciss/ScalaAudioFile
