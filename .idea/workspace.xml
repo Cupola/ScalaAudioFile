@@ -78,7 +78,7 @@
       <file leaf-file-name="AudioFile.scala" pinned="false" current="true" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/src/main/scala/de/sciss/synth/io/AudioFile.scala">
           <provider selected="true" editor-type-id="text-editor">
-            <state line="41" column="31" selection-start="1974" selection-end="1974" vertical-scroll-proportion="0.35607094">
+            <state line="92" column="21" selection-start="3954" selection-end="3954" vertical-scroll-proportion="0.23055935">
               <folding />
             </state>
           </provider>
@@ -784,7 +784,7 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/src/main/scala/de/sciss/synth/io/AudioFile.scala">
       <provider selected="true" editor-type-id="text-editor">
-        <state line="41" column="31" selection-start="1974" selection-end="1974" vertical-scroll-proportion="0.35607094">
+        <state line="92" column="21" selection-start="3954" selection-end="3954" vertical-scroll-proportion="0.23055935">
           <folding />
         </state>
       </provider>

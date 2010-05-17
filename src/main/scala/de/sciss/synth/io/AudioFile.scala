@@ -89,6 +89,9 @@ object AudioFile {
 //   private val NAME_MARK		= "mark"
 //   private val NAME_REGION		= "region"
 
+   @throws( classOf[ IOException ])
+   def openRead( path: String ) : AudioFile = openRead( new File( path ))
+
    /**
     *  Opens an audio file for reading.
     *
@@ -191,6 +194,8 @@ object AudioFile {
    def frameBuffer( numChannels: Int, bufFrames: Int = 8192 ) : Frames =
       Array.ofDim[ Float ]( numChannels, bufFrames )
 
+   def readSpec( path: String ) : AudioFileSpec = readSpec( new File( path ))
+
    def readSpec( f: File ) : AudioFileSpec = {
       val raf  = new RandomAccessFile( f, "r" )
       try {
@@ -213,6 +218,9 @@ object AudioFile {
       val afhr = createHeaderReader( dis )
       afhr.read( dis ).spec
    }
+
+   @throws( classOf[ IOException ])
+   def identify( path: String ) : Option[ AudioFileType ] = identify( new File( path ))
 
    /**
     *  Determines the type of audio file.
