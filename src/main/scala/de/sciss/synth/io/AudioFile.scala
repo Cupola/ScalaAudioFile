@@ -53,61 +53,41 @@ import java.nio.channels.{ Channels }
 import math._
 
 /**
- *	The <code>AudioFile</code> allows reading and writing
- *	of sound files. It wraps a <code>RandomAccessFile</code>
- *	and delegates the I/O to subclasses which deal with
- *	the specific sample format and endianess.
- *	<p>
- *	Currently supported formats are: AIFF, IRCAM,
- *  NeXT/Sun (.au), WAVE, and Wave64. Supported resolutions are
- *  8/16/24/32 bit integer and 32/64 bit floating point.
- *  However not all audio formats support all bit depths.
- *  <p>
- *	Not all format combinations are supported, for example
- *	the rather exotic little-endian AIFF, but also
- *	little-endian SND, WAVE 8-bit.
- *	<p>
- *  In order to simplify communication with CSound,
- *  raw output files are supported, raw input files however
- *  are not recognized.
- *  <p>
- *  To create a new <code>AudioFile</code> you call
- *  one of its static methods <code>openRead</code> or
- *  <code>openAsWrite</code>. The format description
- *  is handled by an <code>AudioFileInfo</code> object.
- *	This object also contains information about what special
- *	tags are read/written for which format. For example,
- *	AIFF can read/write markers, and application-specific
- *	chunk, and a gain tag. WAVE can read/write markers and
- *	regions, and a gain tag, etc.
- *	<p>
- *	The <code>AudioFile</code> implements the generic
- *	interface <code>InterleavedStreamFile</code> (which
- *	is likely to be modified in the future) to allow
- *	clients to deal more easily with different sorts
- *	of streaming files, not just audio files.
+ *	 The <code>AudioFile</code> allows reading and writing
+ *	 of sound files. It can operate both on a <code>RandomAccessFile</code>
+ *  created from a <code>File</code> instance, or on
+ *  an kind of <code>InputStream</code> (not every codec will
+ *  support this though, and functionality might be limited, for example
+ *  seeking is not possible with a plain <code>InputStream</code>).
  *
- *  @author		Hanns Holger Rutz
- *  @version	0.39, 15-May-10
+ *  The codecs are registered with <code>AudioFileType</code>.
+ *  The codecs that come with ScalaAudioFile are found in the <code>impl</code>
+ *  package.
  *
- *  @see		AudioFileInfo
+ *  Reading and writing data requires a user-buffer which holds de-interleaved
+ *  floating point data, that is a two dimensional <code>Array</code> which
+ *  holds <code>Float</code> data. A type alias <code>Frames</code> is provided
+ *  for this, and two helper methods <code>frameBuffer</code>: one static to
+ *  construct an arbitrary user-buffer, one in class <code>AudioFile</code>
+ *  which creates a buffer with the appropriate channel number.
  *
- *  @todo		more flexible handling of endianess,
- *				at least SND and IRCAM should support both
- *				versions.
+ *  @author    Hanns Holger Rutz
+ *  @version   0.39, 17-May-10
  *
- *	@todo		more tags, like peak information and
- *				channel panning.
+ *  @see    AudioFileType
  *
- *	@todo		(faster) low-level direct file-to-file
- *				copy in the copyFrames method
+ *  @todo   openWrite is currently missing
+ *          the goodies of ScissLib are missing, e.g. support for
+ *          markers, comments, app-code.
+ *
+ *  @todo   the copyFrames method uses a user-buffer. it should
+ *          check for the possibility to directly transfer data
+ *          if input and output are compatible.
  */
 object AudioFile {
-   type Frames = Array[ Array[ Float ]]
-
-   private val NAME_LOOP		= "loop"
-   private val NAME_MARK		= "mark"
-   private val NAME_REGION		= "region"
+//   private val NAME_LOOP		= "loop"
+//   private val NAME_MARK		= "mark"
+//   private val NAME_REGION		= "region"
 
    /**
     *  Opens an audio file for reading.
@@ -150,7 +130,7 @@ object AudioFile {
 
    @throws( classOf[ IOException ])
    private def createHeaderReader( dis: DataInputStream ) : AudioFileHeaderReader = {
-      val fileType   = retrieveType( dis ).getOrElse( throw new IOException( "Unrecognized audio file format" ))
+      val fileType   = identify( dis ).getOrElse( throw new IOException( "Unrecognized audio file format" ))
       val factory    = fileType.factory.getOrElse( noDecoder( fileType ))
       factory.createHeaderReader.getOrElse( noDecoder( fileType ))
    }
@@ -207,6 +187,33 @@ object AudioFile {
       af
    }
 */
+
+   def frameBuffer( numChannels: Int, bufFrames: Int = 8192 ) : Frames =
+      Array.ofDim[ Float ]( numChannels, bufFrames )
+
+   def readSpec( f: File ) : AudioFileSpec = {
+      val raf  = new RandomAccessFile( f, "r" )
+      try {
+         val dis  = dataInput( Channels.newInputStream( raf.getChannel() ))
+         val afhr = createHeaderReader( dis )
+         raf.seek( 0L ) // BufferedInputStream did advance the position!
+         afhr.read( raf ).spec
+      } finally {
+         raf.close()
+      }
+   }
+
+   /**
+    *    Note that this method advances in
+    *    the provided input stream, its
+    *    previous position is not reset.
+    */
+   @throws( classOf[ IOException ])
+   def readSpec( dis: DataInputStream ) : AudioFileSpec = {
+      val afhr = createHeaderReader( dis )
+      afhr.read( dis ).spec
+   }
+
    /**
     *  Determines the type of audio file.
     *
@@ -218,17 +225,17 @@ object AudioFile {
     *  @throws IOException if the file could not be read
     */
    @throws( classOf[ IOException ])
-   def retrieveType( f: File ) : Option[ AudioFileType ] = {
-      val dis = new DataInputStream( new FileInputStream( f ))
+   def identify( f: File ) : Option[ AudioFileType ] = {
+      val dis = dataInput( new FileInputStream( f ))
       try {
-         retrieveType( dis )
+         identify( dis )
       } finally {
          dis.close()
       }
    }
 
    @throws( classOf[ IOException ])
-   def retrieveType( dis: DataInputStream ) : Option[ AudioFileType ] =
+   def identify( dis: DataInputStream ) : Option[ AudioFileType ] =
       AudioFileType.known.find( _.factory.map( f => {
          dis.mark( 1024 )
          try {
@@ -482,27 +489,46 @@ trait AudioFile {
 
 //-------- public methods --------
 
-   def file: Option[ File ]
-   def isWritable
-
 	/**
-	 *  Returns a description of theaudio file's format.
-	 *  Fields which are guaranteed to be filled in, are
-	 *  the type (use <code>getType</code>), <code>channels</code>,
-	 *  <code>bitsPerSample</code>, <code>sampleFormat</code>,
-	 *  <code>rate</code> and <code>len</code>.
-	 *
-	 *  @return an <code>AudioFileInfo</code> describing
-	 *			this audio file.
-	 *
-	 *  @warning	the returned description is not immutable but
-	 *				should be considered read only, do not modify it.
-	 *				the fields may change dynamically if the file
-	 *				is modified, e.g. the <code>len</code> field
-	 *				for a writable file.
+	 *  Returns a description of the audio file's specification.
 	 */
 	def spec: AudioFileSpec
-	
+
+   /**
+    *  Returns the underlying <code>File</code> if it was
+    *  provided to the <code>AudioFile</code> constructor.
+    *  For an <code>AudioFile</code> created from an <code>InputStream</code>
+    *  this will return <code>None</code>.
+    */
+   def file: Option[ File ]
+
+   def isWritable : Boolean
+
+   /**
+    *	Reads sample frames from the current position
+    *
+    *  @param  data	buffer to hold the frames read from harddisc.
+    *					the samples will be deinterleaved such that
+    *					data[0][] holds the firstchannel, data[1][]
+    *					holds the second channel etc.
+    *					; it is allowed to have null arrays in the data
+    *					(e.g. data[0] == null), in which case these channels
+    *					are skipped when reading
+    *  @param  off  off in the buffer in sample frames, such
+    *					that he firstframe of the first channel will
+    *					be placed in data[0][off] etc.
+    *  @param  len  number of continuous frames to read.
+    *
+    *  @throws IOException if a read error or end-of-file occurs.
+    */
+   @throws( classOf[ IOException ])
+   def readFrames( data: Frames, off: Int, len: Int ) : AudioFile
+
+   @throws( classOf[ IOException ])
+   final def readFrames( data: Frames ) : AudioFile =
+      readFrames( data, 0, data.find( _ != null ).map( _.length ).getOrElse( 0 ))
+
+
 //   @throws( classOf[ IOException ])
 //	private def init {
 //		channels		   = afd.channels;
@@ -542,6 +568,9 @@ trait AudioFile {
 //		if( bh == null ) throw new IOException( getResourceString( "errAudioFileEncoding" ));
 //	}
 
+   def frameBuffer( bufFrames: Int = 8192 ) : Frames =
+      AudioFile.frameBuffer( numChannels, bufFrames )
+   
 	/**
 	 *  Moves thefile pointer to a specific
 	 *  frame.
@@ -578,30 +607,6 @@ trait AudioFile {
 
    @throws( classOf[ IOException ])
    final def framePosition_=( frame: Long ) : Unit = seekFrame( frame )
-
-	/**
-	 *	Reads sample frames from the current position
-	 *
-	 *  @param  data	buffer to hold the frames read from harddisc.
-	 *					the samples will be deinterleaved such that
-	 *					data[0][] holds the firstchannel, data[1][]
-	 *					holds the second channel etc.
-	 *					; it is allowed to have null arrays in the data
-	 *					(e.g. data[0] == null), in which case these channels
-	 *					are skipped when reading
-	 *  @param  off  off in the buffer in sample frames, such
-	 *					that he firstframe of the first channel will
-	 *					be placed in data[0][off] etc.
-	 *  @param  len  number of continuous frames to read.
-	 *
-	 *  @throws IOException if a read error or end-of-file occurs.
-	 */
-   @throws( classOf[ IOException ])
-	def readFrames( data: Frames, off: Int, len: Int ) : AudioFile
-
-   @throws( classOf[ IOException ])
-	final def readFrames( data: Frames ) : AudioFile =
-      readFrames( data, 0, data.find( _ != null ).map( _.length ).getOrElse( 0 ))
 
 	/**
 	 *	Writessample frames to the file starting at thecurrent position.

@@ -28,7 +28,6 @@
 
 package de.sciss.synth.io
 
-import AudioFile.Frames
 import java.io.IOException
 import scala.{ Byte => SByte, Double => SDouble, Float => SFloat, Int => SInt, Short => SShort }
 import java.nio.channels.{ ReadableByteChannel, WritableByteChannel }
