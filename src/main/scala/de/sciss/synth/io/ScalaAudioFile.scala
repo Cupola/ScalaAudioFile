@@ -38,10 +38,10 @@ object ScalaAudioFile {
    def main( args: Array[ String ]) {
       args.take( 2 ) match {
          case Array( "--test", path ) => {
-            val af = AudioFile.openRead( new java.io.File( path ))
-            println( af.spec.toString )
-            af.close
-            System.exit( 0 )
+            println( if( AudioFile.identify( path ).isDefined )
+                  AudioFile.readSpec( path ).toString
+               else ("Unknown file type : " + path)
+            )
          }
          case _ => {
             printInfo
