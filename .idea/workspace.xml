@@ -72,7 +72,7 @@
       <file leaf-file-name="build.properties" pinned="false" current="true" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/project/build.properties">
           <provider selected="true" editor-type-id="text-editor">
-            <state line="6" column="26" selection-start="173" selection-end="173" vertical-scroll-proportion="0.119205296">
+            <state line="8" column="0" selection-start="199" selection-end="199" vertical-scroll-proportion="0.1589404">
               <folding />
             </state>
           </provider>
@@ -596,7 +596,7 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/project/build.properties">
       <provider selected="true" editor-type-id="text-editor">
-        <state line="6" column="26" selection-start="173" selection-end="173" vertical-scroll-proportion="0.119205296">
+        <state line="8" column="0" selection-start="199" selection-end="199" vertical-scroll-proportion="0.1589404">
           <folding />
         </state>
       </provider>
