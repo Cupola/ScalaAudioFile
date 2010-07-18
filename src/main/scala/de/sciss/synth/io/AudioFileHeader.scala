@@ -29,24 +29,27 @@
 package de.sciss.synth.io
 
 import java.nio.ByteOrder
-import java.io.{ DataInputStream, DataOutputStream, IOException, RandomAccessFile }
+import java.io.{ DataInput, DataInputStream, DataOutput, DataOutputStream, IOException, RandomAccessFile }
 
+/**
+ *    @version 0.11, 17-Jul-10
+ */
 object AudioFileHeader {
    @throws( classOf[ IOException ])
-   @inline protected final def readLittleUShort( dis: DataInputStream ) : Int = {
-      val i = dis.readUnsignedShort()
+   @inline def readLittleUShort( din: DataInput ) : Int = {
+      val i = din.readUnsignedShort()
       (i >> 8) | ((i & 0xFF) << 8)
    }
 
    @throws( classOf[ IOException ])
-   @inline protected final def readLittleInt( dis: DataInputStream ) : Int = {
-      val i = dis.readInt()
+   @inline def readLittleInt( din: DataInput ) : Int = {
+      val i = din.readInt()
       ((i>> 24) & 0xFF) | ((i >> 8) & 0xFF00) | ((i << 8) & 0xFF0000) | (i << 24)
    }
 
    @throws( classOf[ IOException ])
-   @inline protected final def readLittleLong( dis: DataInputStream ) : Long = {
-      val n = dis.readLong()
+   @inline def readLittleLong( din: DataInput ) : Long = {
+      val n = din.readLong()
       ((n >> 56) & 0xFFL) |
             ((n >> 40) & 0xFF00L) |
             ((n >> 24) & 0xFF0000L) |
@@ -58,18 +61,18 @@ object AudioFileHeader {
    }
 
    @throws( classOf[ IOException ])
-   @inline protected final def writeLittleShort( dos: DataOutputStream, i: Int ) {
-      dos.writeShort( (i >> 8) | ((i& 0xFF) << 8) )
+   @inline def writeLittleShort( dout: DataOutput, i: Int ) {
+      dout.writeShort( (i >> 8) | ((i& 0xFF) << 8) )
    }
 
    @throws( classOf[ IOException ])
-   @inline protected final def writeLittleInt( dos: DataOutputStream, i: Int ) {
-      dos.writeInt( ((i >> 24) & 0xFF) | ((i >> 8) & 0xFF00) | ((i << 8)& 0xFF0000) | (i << 24) )
+   @inline def writeLittleInt( dout: DataOutputStream, i: Int ) {
+      dout.writeInt( ((i >> 24) & 0xFF) | ((i >> 8) & 0xFF00) | ((i << 8)& 0xFF0000) | (i << 24) )
    }
 
    @throws( classOf[ IOException ])
-   @inline protected final def writeLittleLong( dos: DataOutputStream, n: Long ) {
-      dos.writeLong( ((n >> 56) & 0xFFL) |
+   @inline def writeLittleLong( dout: DataOutputStream, n: Long ) {
+      dout.writeLong( ((n >> 56) & 0xFFL) |
                      ((n >> 40) & 0xFF00L) |
                      ((n >> 24) & 0xFF0000L) |
                      ((n >>  8) & 0xFF000000L) |
@@ -80,15 +83,19 @@ object AudioFileHeader {
    }
 
    @throws( classOf[ IOException ])
-   protected final def readNullTermString( dis: DataInputStream ) : String = {
+   def readNullTermString( din: DataInput ) : String = {
       val buf  = new StringBuffer()
-      var b    = dis.readByte()
+      var b    = din.readByte()
       while( b != 0 ) {
          buf.append( b.toChar )
-         b	= dis.readByte()
+         b	= din.readByte()
       }
       buf.toString()
    }
+
+   def formatError      = throw new IOException( "A header format error occurred" )
+   def encodingError    = throw new IOException( "File has unsupported encoding" )
+   def incompleteError  = throw new IOException( "Header data is incomplete" )
 }
 
 trait AudioFileHeaderFactory {
@@ -135,8 +142,6 @@ trait AudioFileHeaderReader {
 
    @throws( classOf[ IOException ])
    def read( raf: RandomAccessFile ) : AudioFileHeader
-
-   @inline protected def formatError = throw new IOException( "A header format error occurred" )
 
 //   // WAV and AIFF might overwrite this
 //   @throws( classOf[ IOException ])

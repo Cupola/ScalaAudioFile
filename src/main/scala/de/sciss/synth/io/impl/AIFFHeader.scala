@@ -71,15 +71,17 @@ object AIFFHeader extends AudioFileHeaderFactory {
 
    @throws( classOf[ IOException ])
    def identify( dis: DataInputStream ) = dis.readInt() match {
-      case AIFFHeader.FORM_MAGIC => {	         // -------- probably AIFF --------
+      case FORM_MAGIC => {	         // -------- probably AIFF --------
          dis.readInt()
          val magic = dis.readInt()
-         magic == AIFFHeader.AIFC_MAGIC || magic == AIFFHeader.AIFF_MAGIC
+         magic == AIFC_MAGIC || magic == AIFF_MAGIC
       }
       case _ => false
    }
 
    private class Reader extends AudioFileHeaderReader {
+      import AudioFileHeader._
+
       @throws( classOf[ IOException ])
       def read( raf: RandomAccessFile ) : AudioFileHeader = readDataInput( raf )
 
@@ -87,14 +89,14 @@ object AIFFHeader extends AudioFileHeaderFactory {
       def read( dis: DataInputStream ) : AudioFileHeader = readDataInput( dis )
 
       @throws( classOf[ IOException ])
-      private def readDataInput( di: DataInput ) : AudioFileHeader = {
-         if( di.readInt() != FORM_MAGIC ) formatError  // FORM
+      private def readDataInput( din: DataInput ) : AudioFileHeader = {
+         if( din.readInt() != FORM_MAGIC ) formatError  // FORM
          // trust the file len more than 32 bit form field which
          // breaks for > 2 GB (> 1 GB if using signed ints)
-         di.readInt()
+         din.readInt()
 //       var len           = dis.length() - 8
 //			var len           = (dis.readInt() + 1).toLong & 0xFFFFFFFEL // this gives 32 bit unsigned space (4 GB)
-         val isAIFC        = di.readInt() match {
+         val isAIFC        = din.readInt() match {
             case AIFC_MAGIC   => true
             case AIFF_MAGIC   => false
             case m            => formatError
@@ -108,21 +110,21 @@ object AIFFHeader extends AudioFileHeaderFactory {
 
          try {
             while( !ssndFound ) {
-               if( chunkLen != 0 ) di.skipBytes( chunkLen )  // skip remainder from previous chunk
+               if( chunkLen != 0 ) din.skipBytes( chunkLen )  // skip remainder from previous chunk
 
-               val magic   = di.readInt()
-               chunkLen	   = (di.readInt() + 1) & 0xFFFFFFFE
+               val magic   = din.readInt()
+               chunkLen	   = (din.readInt() + 1) & 0xFFFFFFFE
 
                magic match {
                case COMM_MAGIC => { // reveals spec
-                  val numChannels   = di.readShort()
+                  val numChannels   = din.readShort()
 //                commSmpNumOffset  = dis.getFilePointer()
-                  val numFrames		= di.readInt().toLong & 0xFFFFFFFFL
-                  val bitsPerSample = di.readShort()
+                  val numFrames		= din.readInt().toLong & 0xFFFFFFFFL
+                  val bitsPerSample = din.readShort()
 
                   // suckers never die. perhaps the most stupid data format to store a float:
-                  val l1 				= di.readLong()
-                  val l2	 			= di.readUnsignedShort()
+                  val l1 				= din.readLong()
+                  val l2	 			= din.readUnsignedShort()
                   val l3	 			= l1 & 0x0000FFFFFFFFFFFFL
                   val i1				= ((l1 >> 48).toInt & 0x7FFF) - 0x3FFE
                   val sampleRate    = ((l3 * pow( 2.0, i1 - 48 )) +
@@ -131,7 +133,7 @@ object AIFFHeader extends AudioFileHeaderFactory {
                   chunkLen         -= 18
                   val (byteOrder, sampleFormat) = if( isAIFC ) {
                      chunkLen -= 4
-                     di.readInt() match {
+                     din.readInt() match {
                         case NONE_MAGIC      => (BIG_ENDIAN, intSampleFormat( bitsPerSample ))
                         case `in16_MAGIC`    => (BIG_ENDIAN, SampleFormat.Int16)
                         case `in24_MAGIC`    => (BIG_ENDIAN, SampleFormat.Int24)
@@ -167,9 +169,9 @@ object AIFFHeader extends AudioFileHeaderFactory {
                }
 
                case SSND_MAGIC => {
-                  val i1            = di.readInt() // sample data off
-                  di.readInt()
-                  di.skipBytes( i1 )
+                  val i1            = din.readInt() // sample data off
+                  din.readInt()
+                  din.skipBytes( i1 )
                   ssndFound         = true   // important: this must be the last case block statement coz we catch EOF!
                }
 

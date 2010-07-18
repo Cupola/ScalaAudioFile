@@ -30,24 +30,30 @@ package de.sciss.synth.io
 
 import impl._
 import java.io.DataInputStream
+import collection.immutable.{ Set => ISet }
 
 abstract /* sealed */ class AudioFileType( val id: String, val ext: String ) {
    def factory: Option[ AudioFileHeaderFactory ]
 }
 
+/**
+ *    @version 0.11, 17-Jul-10
+ */
 object AudioFileType {
-   private val sync  = new AnyRef
+//   private val sync  = new AnyRef
    private var set   = Set[ AudioFileType ]( AIFF, NeXT, Wave, IRCAM, Wave64 )
 
    def register( fileType: AudioFileType ) {
-      sync.synchronized { set += fileType }
+//      sync.synchronized {
+         set += fileType
+//      }
    }
 
    /**
     *    Note: this Iterator does not include the Raw type
     *    which usually requires special handling.
     */
-   def known : Set[ AudioFileType ] = sync.synchronized { set }
+   def known : ISet[ AudioFileType ] = set // sync.synchronized { set }
 
    case object AIFF   extends AudioFileType( "aiff",  "aif" ) {
       def factory = Some( AIFFHeader )
@@ -56,7 +62,7 @@ object AudioFileType {
       def factory = None // XXX
    }
    case object Wave   extends AudioFileType( "wav",   "wav" ) {
-      def factory = None // XXX
+      def factory = Some( WaveHeader )
    }
    case object IRCAM  extends AudioFileType( "ircam", "irc ") {
       def factory = None // XXX
